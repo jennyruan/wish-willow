@@ -18,6 +18,15 @@ Keep `npx convex dev` running while you work so function changes sync to your de
 - `src/app/`: expo-router screens (`index.tsx` home, `suggestions.tsx` pending suggestions).
 - `convex/`: schema (`wishes`, `suggestions`, `preferences`), queries and mutations, and the seed.
 
+## Memory and ranking
+
+Willow's per-user memory lives in [Supermemory](https://supermemory.ai) and is only ever called from Convex actions (`convex/memory.ts`), with the user's id as the namespace. Creating a wish (`wishes:create`) remembers it, accepting or declining a suggestion records a one-line preference, and each of those reranks the pending suggestions (`convex/ranking.ts`) using what was recalled.
+
+```sh
+npx convex env set SUPERMEMORY_API_KEY sm_...   # optional: without it, memory falls back to the preferences table
+npx convex env set ANTHROPIC_API_KEY sk-ant-... # optional: without it, ranking orders by liked/disliked categories
+```
+
 ## Secrets
 
 Only `EXPO_PUBLIC_*` variables are bundled into the app, and `EXPO_PUBLIC_CONVEX_URL` is the only one the app needs. Any third-party API key belongs in the Convex deployment (`npx convex env set NAME value`) and is read with `process.env.NAME` inside a Convex action, never in app code.

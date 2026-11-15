@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { api } from "../../convex/_generated/api";
+import { DEMO_USER_ID } from "../lib/demoUser";
 
 export default function Suggestions() {
   const suggestions = useQuery(api.suggestions.listPending);
@@ -43,14 +44,14 @@ export default function Suggestions() {
             <Pressable
               accessibilityRole="button"
               style={[styles.action, styles.accept]}
-              onPress={() => setStatus({ id: item._id, status: "accepted" })}
+              onPress={() => setStatus({ id: item._id, status: "accepted", userId: DEMO_USER_ID })}
             >
               <Text style={styles.actionText}>Accept</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
               style={[styles.action, styles.decline]}
-              onPress={() => setStatus({ id: item._id, status: "declined" })}
+              onPress={() => setStatus({ id: item._id, status: "declined", userId: DEMO_USER_ID })}
             >
               <Text style={[styles.actionText, styles.declineText]}>Decline</Text>
             </Pressable>

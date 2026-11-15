@@ -7,13 +7,17 @@ export const suggestionStatus = v.union(
   v.literal("declined"),
 );
 
+export const intakeValidator = v.record(v.string(), v.string());
+
 export default defineSchema({
   wishes: defineTable({
+    userId: v.string(),
     text: v.string(),
     type: v.optional(v.string()),
     timeline: v.optional(v.string()),
+    intake: v.optional(intakeValidator),
     createdAt: v.number(),
-  }),
+  }).index("by_userId", ["userId"]),
   suggestions: defineTable({
     title: v.string(),
     place: v.string(),
@@ -22,6 +26,7 @@ export default defineSchema({
     neighborhood: v.string(),
     zip: v.string(),
     status: suggestionStatus,
+    rank: v.optional(v.number()),
   }).index("by_status", ["status"]),
   preferences: defineTable({
     userId: v.string(),
