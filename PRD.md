@@ -1,9 +1,10 @@
-# Wish Willow — PRD
+# Wish Willow — PRD (v1, finalized 2026-11-15)
 
-**YC Consumer Mobile Hackathon · Sun Nov 15 2026 · solo · Expo + Convex + Capy + Revyl (+ Supermemory)**
-**Demo vertical: find connection.** Engine is vertical-agnostic; connection is the spine for today.
+**YC Consumer Mobile Hackathon · Sun Nov 15 2026 · Expo + Convex + Capy + Revyl (+ Supermemory / Whop)**
 
 > *Make a wish. Something falls in love with helping you keep it.*
+
+**Operating model (Rule 0):** Claude Code plans, designs the UI, and writes this PRD + Capy tickets. **Capy writes all code, runs builds + Revyl tests, and submits PRs.** GitHub is the single source of truth. See `RULES.md`.
 
 ---
 
@@ -13,117 +14,128 @@
 People carry a wish they never get to — and every app waits for *them* to show up.
 
 ### 2. Why now
-The bar YC set is "an app people open again tomorrow." Companions talk but don't act; coaches advise but don't do the legwork; assistants act but don't know you or reach out. **No incumbent combines proactive outreach + real-world legwork + wish-to-plan** — that white space is the opening, and voice + persona-memory (Jenny's edge) is what makes "it comes to you and it's *yours*" feel real.
+YC's bar is "an app people open again tomorrow." Companions talk but don't act; assistants act but don't know you or reach out; marketplaces need you to do the work. **No one combines proactive AI legwork + a community that helps + a wish-to-reality loop.** Voice + persona-memory is the edge that makes "it comes to you and it's *yours*" feel real. Fo by Wajo (see §6c) validates the agentic half; the community + wish framing is the open territory.
 
 ### 3. Solution
-A voice companion devotedly obsessed with helping you keep one wish: you speak it, Willow makes a plan and **comes to you every day with the next real step**, adapting as it learns you.
+A voice companion devoted to helping you keep a wish. You speak it, Willow clarifies it, you blow to cast — then **either Willow quietly fulfills it for you (within your budget + timeline), or — if you make it public — the community helps, and you reward whoever does.** When it comes true, it's marked as **reality**.
 
 ### 4. Reasoning
-- **Proactive, not reactive** — Willow comes to you. Fresh framing in a room of 180 chatbots, and it *is* the "come back tomorrow" retention mechanic (not bolted on).
-- **Earned attachment, not dark patterns** — dopamine from being genuinely known + visible progress (the willow grows), never streak-guilt or spam. Holds up at six months, which is the judges' real bar.
-- **Two filters it passes** — fights loneliness (a patient daily presence); democratizes a luxury (a 1:1 concierge who remembers everything is what rich people pay for).
-- **The flip (narrative hook)** — the 2025 movie *Obsession* has a "One Wish Willow" whose wish becomes a curse inflicted on someone else. Wish Willow is the good version: the wish is *yours*, consensual, and the obsession belongs to the *agent*, pointed at your growth.
-- **Vision line (close on this)** — *"Today it helps you find your person. Tomorrow you wish for anything — get fit, learn CS, grow your startup — and Willow conspires to get you there."*
+- **Proactive, not reactive** — Willow comes to you. Fresh in a room of chatbots, and it *is* the "come back tomorrow" retention loop.
+- **Two passes of the founder's filter** — fights loneliness (a patient daily presence) and democratizes a luxury (a 1:1 concierge + a crowd who helps).
+- **The flip (hook)** — the 2025 film *Obsession* has a "One Wish Willow" whose wish becomes a curse on someone else. Wish Willow is the good version: the wish is *yours*, consensual, and the obsession belongs to the *agent*, pointed at your growth. Tagline: **wishes do come true.**
+- **Vision line (close on this)** — *"Today it helps you find your person or your next thing. Tomorrow you wish for anything, and Willow — plus a community — conspires to make it real."*
 
 ---
 
 ## ── SHARED (what) ──
 
-### 5. UI structure
-One memorable visual (the willow tree that grows) beats five screens. Four screens, voice-forward.
+### 5. The flow (minimal, voice-first)
+Splash (2s, logo) → **"I Wish"** home (4 affirmation cards) → clarify (adaptive) → "anything else" → **private/public** (+ reward if public) → **blow the willow** → Willow goes to work + daily check-ins.
 
+**Demo wish types (stated as affirmations):**
+- 💛 *I have a girlfriend* · 💙 *I have a boyfriend* — clarify: local/remote (Local → inline city/ZIP), **upload several photos of your type (multi-select)** + note, budget + timing, anything else, private/public.
+- 📱 *I have an iPhone 18 Pro* — clarify: configuration (real Apple options: Pro/Pro Max · Silver/Black/Glacier/Burgundy · 256GB/512GB/1TB/2TB), location, budget + timing, private/public. Willow's help adapts to budget vs. real market price (buy / finance / crowdfund) + surfaces the hackathon RSVP (its real 1st prize is an iPhone 18 Pro per team member — a genuine path to the wish). All hackathon facts are live/verified (eligibility: Capy+Revyl+Convex; submit by 6:30 PM).
+- 📊 *I can see how the YC Consumer Mobile Hackathon's going* — clarify: what to track, private/public → a live status digest.
+
+**Inputs:** voice is first-class on every screen (mic); timing uses a number picker + unit (days/weeks/months/years).
+
+### 6. Product architecture — two engines, one front
+
+**6.0 Shared front.** Speak → Willow clarifies (incl. **private vs. public**) → confirm + blow → Willow works + runs a proactive daily check-in. The willow visibly grows as a wish progresses.
+
+**Every solution is actionable, end-to-end (no dead-end cards).** Each result card Willow surfaces is a real, tappable action that moves the wish forward and confirms a next-state — e.g. **RSVP** (deep link to the real event), **Reserve/Buy** (via the single-use card), **Pick a helper → release reward** (Whop), **Start financing / crowdfund**, **Turn on daily check-ins**, **Mark as reality**. The user can actually take the step toward making the wish come true, not just read about it.
+
+**6a. Engine A — Willow does it (agentic).** Works quietly to fulfill the wish within **budget + timeline**.
+- **AI layer (OpenAI, $100 hackathon credits, model `gpt-6-luna`):** powers Willow's *actual work* — (1) **wish clarification** (turn a spoken wish into structured intake + the right follow-up questions) and (2) **online research** (search real sources to assemble a plan / real options toward the wish). This is the proof that Willow does real legwork, not canned replies. Research obeys the real-info rule — cite the source + fetch time; never fabricate (§13 Rule 1). **Voice:** Deepgram STT + **Deepgram Aura TTS** (Willow's spoken voice). **Memory:** **Supermemory (v1)** stores Willow's learned profile of each user (preferences, facts, wins) scoped by `userId` — makes clarification/greetings feel devoted and sharpens research over time; the `sm_` key is **server-side only (proxied)**, never shipped in the app.
+- v1 stops short of unattended spend: Willow does the work, then hands a **one-tap-to-authorize** result ("found it, $80 of your $100 — blow to confirm"). The second blow = spend authorization.
+- **Spend mechanism (from Fo by Wajo):** a **single-use virtual card capped at budget** — Willow transacts without holding the user's money or being a money-mover (dodges money-transmitter/visa weight).
+
+**6b. Engine B — the community does it (social).** Willow drafts a post → confirm + blow → posts publicly → collects updates, checks in, and coaches. Two modes: **(i) Honor** — someone fulfills it (`publish → honorers reply → wisher selects → reward releases`); **(ii) Coach** — Willow + crowd advise what *you* can do.
+- **Reward:** free (thanks) or paid, **no cap on the amount (the user sets it)**. UI = quick-pick chips ($0 / $25 / $50 / $100) + a custom "price it" field. Paid rail = **Whop** (merchant-of-record; Convex holds state). **Escrow = charge-on-select.**
+- **When budget < price (e.g. the iPhone wish), Willow opens real paths:** **crowdfunding** — a Willow-**drafted title + post** the user can use, plus a list of real crowdfunding sites (GoFundMe · Fundly · Chuffed · GiveSendGo); and **financing** — a list of legit pay-over-time options (Apple Card Monthly Installments · Affirm · Klarna · PayPal Pay Later). Real links; real-info rule applies.
+
+**6c. Comparable — Fo by Wajo (positioning).** *wajo.ai* — AI action-agent that does to-dos within boundaries, buys via single-use cards, escalates to humans. Validates Engine A. Our wedge: **wishes not to-dos · a public community marketplace with rewards · place-anchored · voice-first consumer mobile.** Demo the community path — the part Fo lacks.
+
+### 7. Identity, data model, and the multi-user system
+
+**Identity — join-by-handle (locked).** Each device has a `deviceToken`; user picks a handle; `joinByHandle` upserts a user. **Handles are unique** (a handle is a valid DM address — `joinByHandle` rejects a taken handle). No passwords — a whole room joins by QR in seconds. Production migrates to real auth / YBuffet Cognito.
+
+**Data model (Convex):**
 ```
-App
-├─ WishScreen            "What do you wish for?"  [willow sapling]
-│   └─ BlowToCast        mic-blow (or tap/hold) → catkin particle burst → wish cast
-├─ IntakeScreen         Willow asks 1–3 Qs by voice (what kind of person / how soon)
-│   └─ "Okay — I'm on it."
-├─ DailyScreen          ← the core screen
-│   ├─ WillowGreeting    warm line w/ name + 1 remembered detail (from Supermemory)
-│   ├─ SuggestionCard    title · place · when · category   [Accept] [Decline]  (voice or tap)
-│   ├─ AdaptBanner       "You skipped the bars, loved the outdoorsy stuff — leaning in."
-│   └─ WillowTree        grows as suggestions are accepted/attended
-└─ (fallback) progress bar replaces WillowTree if behind
+users         { handle, avatarId?, deviceToken, createdAt }
+wishes        { ownerId, text, kind, intake?, locality?, location?, lat?, lng?, budget?,
+                timeNum?, timeUnit?, visibility, reward?, status,
+                realized, realizedAt?, createdAt }     // a user's wish list = their rows
+comments      { wishId, authorId, kind(text|photo|video|match), body?, mediaId?,
+                parentId?, approved, createdAt }        // threaded, moderated
+conversations { user1, user2, createdAt }               // DMs (in for v1)
+messages      { conversationId, authorId, body?, mediaId?, createdAt }
+notifications { userId, kind(comment|fund|rsvp|reward|match), text, wishId?, read, createdAt }
+media         // Convex file storage (photo/video), referenced by mediaId
 ```
 
-### 6a. Product facts (stated once)
-- **Type:** iOS consumer mobile app (Expo Go on phone for demo; EAS simulator build for Revyl).
-- **Data model (Convex):**
-  ```
-  users        { _id, name, createdAt }
-  wishes       { _id, userId, text, type, timeline, intake, createdAt, status }
-  suggestions  { _id, wishId, title, place, when, category,
-                 status: 'pending'|'accepted'|'declined', shownAt }
-  events       { _id, userId, type, payload, ts }   // accept/decline signals, wins
-  ```
-  - Convex = reactive store; `useQuery` pushes live updates (the "it's alive" feel on stage).
-  - **Supermemory** = the compounding profile (learned preferences, personal facts, wins) Willow references to feel devoted. Load-bearing — the "remembers you" magic lives here. (`namespace` = userId, v5; `sm_` key server-side only.)
-- **Seed, don't integrate:** the 42 real SF spots in `sf-suggestions.seed.json` populate `suggestions`. On stage this looks identical to live search, with zero integration risk. One real web-search call is a bonus *only if way ahead*.
-- **Privacy / framing guard:** "show up where connection happens" (public events/clubs) — never matchmaking or pointing at specific strangers. Keeps it warm and safe.
-- **No auth.** Single hardcoded user for the demo. (Auth is the classic time sink; cut it.)
+**Data storage.** **Convex is the system of record for ALL app data** — users, wishes, comments, DMs, uploaded media, rewards — for **every user, including test users**. **Supermemory holds only the derived per-user profile** (preferences/facts/wins), not the records. Both are cloud (Convex + Supermemory). This tensions with the global local-first rule; for the hackathon it's expected (required sponsor tools), but **production should migrate to local-first + consent** (migration item). **Notifications are generated from real events:** a new comment → `comment`; a Whop payment webhook → `fund` / `reward`; an RSVP/action approval → `rsvp`; a matchmaker reply → `match`.
 
-### 6b. User flows
+**Profile menu (handle, top-right).** Layout: **logo + "I Wish" left-aligned; the user's handle (initial-only avatar) in the top-right.** Tapping it opens a menu with three tabs:
+- **🔔 Notifications** — new comments, and action-item updates: *crowdfunding funds came in, an RSVP was approved, a reward released, a match replied.* Tapping a notification deep-links to the relevant wish.
+- **🌳 Wishes** — the user's **wish list**, each labeled **in progress** or **✓ true** (realized). Every wish is **clickable → detail** (status + the **action list**).
+- **✉️ DMs** — conversation list → a thread the user can read and reply in.
 
-**Flow A — Cast a wish**
-Speak wish ("I wish I had a boyfriend") → blow to cast (tap fallback) → catkins scatter → `wishes` row created → Willow asks 1–3 intake Qs by voice → answers stored on `wishes.intake` → "Okay — I'm on it."
+**Navigation & engagement.**
+- **Bottom tab bar** on the home/menu/community screens (hidden during the wish flow so it doesn't fight the input): **🔔 Notifications · ✉️ DMs · 🌳 Wishes · 👥 Community.**
+- **👥 Community ("the grove")** — a feed of public wishes near you (wisher, location, reply count, reward), the social front door.
+- **🔥 Daily wish-check streak** pill at the top — counts consecutive days the user checks in, to drive daily return (the retention loop made explicit). Streak state lives in Convex per user.
 
-**Flow B — Daily proactive loop (THE demo)**
-Willow greets warmly (name + 1 remembered detail) → shows 1–3 `pending` suggestions (real SF places) → user accepts/declines by voice or tap → signal written to Supermemory + `events` → next batch filtered/reordered by learned preference → willow grows on accept.
+**Modify a wish.** From a wish's detail, **Modify** opens the wish for editing. **If Willow already has the essential info, modifying skips the clarification flow** — straight to edit + regenerate the action list. If the wish **already came true**, the user chooses: **make it a new wish** (keeps the old one as reality) or **override** it (reopen with updated details) — either way a fresh action list is generated.
 
-**Flow C — Adapt + remember (the proof)**
-On re-open (pre-seeded "day-2"), greeting references yesterday and the AdaptBanner shows the learned shift ("skipped bars, loved outdoorsy — leaning in"). This is the retention proof; protect it with your life.
+**Location (real geocoding, auto).** When a user types a city or ZIP, Willow resolves it **automatically** (debounced on input — no extra tap) via a `geo.geocode` Convex action using free, keyless geocoding — **Zippopotam.us** for US ZIPs, **Open-Meteo geocoding** for city names — returning a normalized label + `lat/lng` stored on the wish. The public feed can then **filter/sort by proximity** to the viewer. Fits the real-info rule (real geographic data; if it can't resolve, say so, don't guess).
 
-**Personality spec (the obsession-flip):** warm, delighted by you, gently encouraging when you decline, always rooting for the wish. Uses your name + one remembered detail per greeting. Celebrates *real* steps. Never guilt, never spam. Lives in the system prompt (`SYSTEM-PROMPTS.md`), kept consistent.
+**iPhone finishes show real color swatches** — each finish chip renders a color block approximated from Apple's named finishes (Silver / Black / Glacier / Burgundy).
+
+**How multi-user works:**
+1. Make a wish → if **Public**, it enters everyone's feed (`listPublic`).
+2. Others reply — **text, photo, or video** (upload via `generateUploadUrl` → `comments.add`). **Comments are all public — they appear immediately**, no approval gate.
+3. Comments update **live** for everyone (Convex reactivity — like a shared Google Doc).
+4. **Safety net (post-moderation, not a gate):** the wish owner can **remove/delete** any reply after the fact. No pre-approval.
+5. **DMs (v1):** 1:1 via `getOrCreateConversation` + `sendMessage` (text + media). Start a DM by **tapping a comment author** (you have their id) or by **typing a unique handle** (`getByHandle` → `getOrCreateConversation`).
+6. Owner **marks the wish as reality** (`markRealized`) when it comes true.
+
+**Every user has a wish list** (`listMine` / `countMine`): their own wishes, newest first; realized ones shown as **reality**.
+
+### 8. Access & distribution (zero-install for test users)
+- **Wisher / demoer** (needs voice + blow): native app via **Expo Go / TestFlight**.
+- **Everyone else — the room, test users** (join, browse public wishes, comment, upload, DM): a **web link + QR** → same Convex backend → **no install**. Built as **Expo Web (react-native-web)**, one codebase, deployed on **EAS Hosting**, with **tap/type fallbacks** for the native-only voice/blow bits.
+- **Revyl** = automated AI testing on cloud simulators (needs an EAS simulator build, not Expo Go; Capy auto-connects it) — NOT a way to onboard humans.
+
+### 9. Design system (hand to Capy as the design contract)
+Vintage novelty / two-color letterpress. Colors: `paper #EBE0C6 · red #B23A2C · red-deep #8E2C20 · ink #241C16 · ochre #C68A38`. Fonts: **Anton** (logotype/buttons) · **Yeseva One** (the "wish" voice / questions) · **DM Sans** (body/UI). Motifs: willow-twig roundel logo, starbursts, "1 wish" badge, letterpress grain, stamp-buttons with hard red-deep drop-shadow, catkin blow animation. Reference the aesthetic, draw original marks (not the film's artifact). Reference mockup: `wish-willow-demo.html`; logo: `wish-willow-logo.svg`.
+
+**Responsive (required):** the UI auto-adapts to **all device sizes** — small phones (iPhone SE) → large (Pro Max) → tablets — using flex layouts, relative units, and **safe-area insets**; no fixed heights. **Layout convention: logo pinned at the top, the wish input pinned at the bottom**, content between. The "I Wish" home must **fit on one screen without scrolling** on the smallest common phone (text sizes scale down to fit, e.g. the "I Wish" title stays compact).
 
 ---
 
-## ── FOR THE AGENT (how to build + verify) ── *(on — this deploys today; doubles as the Capy ticket contract)*
+## ── FOR THE AGENT (Capy build contract) ──
 
-### 7. Acceptance criteria
-- **A1 (cast):** speaking a wish creates a `wishes` row and transitions to intake; tap-to-cast always works even if mic-blow misfires.
-- **A2 (intake):** 1–3 voice Qs captured onto `wishes.intake`; "I'm on it" advances to DailyScreen.
-- **A3 (daily loop):** DailyScreen renders ≥1 `pending` suggestion with real SF place/when; Accept→`accepted`, Decline→`declined`, each writes an `events` signal.
-- **A4 (adapt):** after ≥2 declines in a category + ≥1 accept in another, the next batch is reordered toward the accepted category AND the AdaptBanner states the learned preference in plain language.
-- **A5 (remember):** greeting on re-open includes the user's name + one detail from Supermemory tied to yesterday.
-- **A6 (alive):** a Convex `useQuery` drives the DailyScreen so an accept updates the tree/list without manual refresh.
-- **A7 (tested):** one Revyl English flow passes end-to-end (wish → suggestion → accept → adapt) on an EAS build.
+### 10. Scope
+- **v1 IN:** the flow (splash → I Wish → clarify → private/public → blow), 4 demo wish types, join-by-handle (unique handles), wish list, Engine A (safe form: OpenAI clarify + online research → a real result within budget/timeline; Deepgram STT + Aura TTS; **Supermemory** remembers-you profile), Engine B public feed + comments all-public (text/photo/video) + reward-on-select (Whop, no cap), **DMs** (tap-author or by handle), mark-as-reality, zero-install Expo Web (EAS Hosting) participation surface, one Revyl smoke test.
+- **Stretch:** unattended Engine A spend, Keiki iMessage nudge.
+- **OUT:** real matchmaking of specific strangers without consent; production auth.
 
-### 8. Files & interfaces
-```
-convex/schema.ts                 // users, wishes, suggestions, events (6a)
-convex/wishes.ts                 // createWish(text), setIntake(wishId, intake)
-convex/suggestions.ts            // nextBatch(wishId) -> Suggestion[]  (filter/reorder by prefs)
-                                 // respond(suggestionId, 'accepted'|'declined')
-convex/memory.ts                 // recordSignal(userId, signal), greeting(userId) -> string (Supermemory)
-convex/seed.ts                   // import sf-suggestions.seed.json -> suggestions
-app/WishScreen.tsx               // BlowToCast + record/STT
-app/IntakeScreen.tsx
-app/DailyScreen.tsx              // useQuery(suggestions), WillowGreeting, AdaptBanner, WillowTree
-components/WillowTree.tsx        // sapling -> tree by accepted count
-components/BlowToCast.tsx        // expo-audio metering; tap/hold fallback
-lib/voice.ts                     // Deepgram STT (header `Token`), Aura/expo-speech TTS
-lib/llm.ts                       // intake + adapt reasoning (Gemini/Anthropic key already local)
-```
+### 11. Build order (PR-shaped for Capy; see `CAPY-TICKET-convex.md`)
+1. **Backend** — add the Convex schema + functions (users/wishes/comments/dms/files/seed) verbatim; run seed; verify `listPublic`/`listForWish` reactive.
+2. **Identity + wish + wish list** — join-by-handle on launch; create wish; wish-list home (realized = reality); public feed.
+3. **Community** — comment thread (text/photo/video via upload), **comments all public (no gate)** with owner remove/delete as a safety net, mark-as-reality; **DMs**.
+4. **Zero-install web** — Expo Web participation surface (feed/wish/comment/DM) + QR; tap fallbacks for voice/blow.
+5. **Engine A** — Willow assembles a budgeted result + one-tap authorize (single-use card pattern).
+6. **Polish + Revyl** — one English smoke test on an EAS simulator build; capture evidence.
 
-### 9. Scope fence
-- **IN:** Flows A/B/C, 4 screens, Convex live store, Supermemory signal+greeting, seeded SF suggestions, one Revyl test.
-- **OUT (vision, not today):** live event-search / web scraping, matchmaking, the learning/CS-tutor vertical (vision line only), Whop monetization (late stretch only), Keiki iMessage nudge (top stretch, only if core loop solid by mid-afternoon).
-- **DO NOT TOUCH:** auth (skip), SM-2 spaced-repetition math (belongs to the learning vertical, not this build).
+### 12. Verify
+- `npx convex dev` compiles (validators/indexes clean); seed populates demo data (self-evidently labeled).
+- Two devices/sessions: public wish on one appears in the other's feed; a photo reply posts and shows **live immediately** (no gate); owner can remove it; DM round-trips; mark-as-reality flips a wish to reality.
+- Zero-install: open the web URL on a phone with no app installed → join by handle → comment on a public wish → it appears live.
+- Revyl: one English flow passes on the EAS simulator build; save the recording.
 
-### 10. Build order (dependency-sequenced; maps to TIMELINE.md gates)
-1. Baseline: create-expo-app → Convex connect → one live `useQuery` in Expo Go. **Lock first.**
-2. Schema + seed import (`convex/schema.ts`, `seed.ts`).
-3. Flow A: wish capture (voice→text) → `createWish` → intake → sapling.
-4. Flow B: DailyScreen renders suggestions → accept/decline → `events` signal. **The demo.**
-5. Flow C: Supermemory greeting + AdaptBanner reorder; willow grows.
-6. Polish ONE path; pre-seed a "day-2" session so the remember moment works live; empty/loading states.
-7. Mic-blow on top of tap (45-min box, polish window only); keep tap fallback.
-8. Revyl English flow on EAS build; capture evidence. Submit.
-
-**Cut-lines if behind (drop in order):** willow visual → progress bar; TTS out → show text, keep voice-*in*; LLM adapt → hardcoded reorder; Revyl → one minimal passing test. **Never cut:** voice-in + accept/decline + the "it remembers you" moment.
-
-### 11. Verify
-- `npx tsc --noEmit` (type-check the whole app).
-- Convex: `npx convex dev` running; `npx convex run seed:import` populates `suggestions`.
-- Smoke on phone (Expo Go): run Flows A→B→C manually; confirm A1–A6 by observation.
-- Revyl: run the English flow against the EAS simulator build; confirm A7 passes; save the recording for the demo + submission.
+### 13. Hard rules (`RULES.md`)
+- **Rule 0 — we plan, Capy builds.** No app code / commits / pushes from us.
+- **Rule 1 — real info only.** Prices (Apple), events, hackathon facts from live sources; keep source + fetch time; missing data → say so; demo/seed data visibly labeled.
+- **Consent & privacy.** Photos/info of real third parties (matchmaking) need consent before they're shown; test-user data lives in the cloud for the demo, so use demo data + a quick verbal OK from live participants; production = local-first + consent.
