@@ -9,7 +9,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#EBE0C6"
     },
     "ios": {
       "supportsTablet": true
@@ -28,7 +28,14 @@
     },
     "plugins": [
       "expo-audio",
-      "expo-asset"
+      "expo-asset",
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Wish Willow uses your photos so Willow can see the kind of person you are drawn to."
+        }
+      ]
     ]
   }
 }
