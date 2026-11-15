@@ -8,11 +8,13 @@
  * @module
  */
 
+import type * as intake from "../intake.js";
 import type * as memory from "../memory.js";
 import type * as preferences from "../preferences.js";
 import type * as ranking from "../ranking.js";
 import type * as seed from "../seed.js";
 import type * as suggestions from "../suggestions.js";
+import type * as voice from "../voice.js";
 import type * as wishes from "../wishes.js";
 
 import type {
@@ -22,11 +24,13 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  intake: typeof intake;
   memory: typeof memory;
   preferences: typeof preferences;
   ranking: typeof ranking;
   seed: typeof seed;
   suggestions: typeof suggestions;
+  voice: typeof voice;
   wishes: typeof wishes;
 }>;
 

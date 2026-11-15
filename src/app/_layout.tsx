@@ -19,6 +19,7 @@ export default function RootLayout() {
       <StatusBar style="dark" />
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="intake" options={{ title: "A few questions" }} />
         <Stack.Screen name="suggestions" options={{ title: "Suggestions" }} />
       </Stack>
     </ConvexProvider>

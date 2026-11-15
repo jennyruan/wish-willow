@@ -1,22 +1,29 @@
+import { useMutation } from "convex/react";
 import { router } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { api } from "../../convex/_generated/api";
+import { VoiceCapture } from "../components/VoiceCapture";
 import { WillowTree } from "../components/WillowTree";
+import { DEMO_USER_ID } from "../lib/demoUser";
 
 export default function Home() {
+  const startWish = useMutation(api.wishes.start);
+
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Wish Willow</Text>
       <View style={styles.tree}>
         <WillowTree size={260} />
       </View>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => router.push("/suggestions")}
-        style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-      >
-        <Text style={styles.buttonText}>Make a Wish</Text>
-      </Pressable>
+      <VoiceCapture
+        label="Make a Wish"
+        placeholder="I wish..."
+        onSubmit={async (text) => {
+          const wishId = await startWish({ userId: DEMO_USER_ID, text });
+          router.push({ pathname: "/intake", params: { wishId, wish: text } });
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -36,21 +43,5 @@ const styles = StyleSheet.create({
   },
   tree: {
     marginVertical: 32,
-  },
-  button: {
-    width: "100%",
-    maxWidth: 360,
-    paddingVertical: 22,
-    borderRadius: 999,
-    backgroundColor: "#4E7D3A",
-    alignItems: "center",
-  },
-  buttonPressed: {
-    opacity: 0.85,
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 24,
-    fontWeight: "700",
   },
 });
