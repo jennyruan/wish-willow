@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { TopBar, type Tab } from "../components/Chrome";
-import { Chip, Chips, Question, StatusLabel, T, VoiceField } from "../components/ui";
+import { Chip, Chips, CtaButton, Question, StatusLabel, T, VoiceField } from "../components/ui";
 import type { Me } from "../identity";
 import { timeAgo } from "../media";
 import { colors, fonts, useScale } from "../theme";
@@ -89,21 +89,79 @@ function Notifications({ userId, onOpen }: { userId: Id<"users">; onOpen: (wishI
   });
 }
 
-/** Opt in to Willow's daily check-in over text (Keiki, free shared iMessage number or Telegram). */
+/**
+ * Opt in to Willow's daily check-in over text (Keiki: the free shared iMessage
+ * number or Telegram), bound to the user's own iMessage number or Telegram ID.
+ */
 function DailyNudge({ userId }: { userId: Id<"users"> }) {
   const { s } = useScale();
-  const enabled = useQuery(api.nudge.status, { userId });
+  const nudge = useQuery(api.nudge.status, { userId });
+  const join = useQuery(api.nudge.joinInfo, {});
   const setDailyNudge = useMutation(api.nudge.setDailyNudge);
+  const [editing, setEditing] = useState(false);
+  const [channel, setChannel] = useState<"imessage" | "telegram">("imessage");
+  const [address, setAddress] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const turnOn = async () => {
+    setError(null);
+    try {
+      await setDailyNudge({ userId, enabled: true, channel, address });
+      setEditing(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message.replace(/^.*Uncaught Error: /, "").split("\n")[0] : "Couldn't turn it on.");
+    }
+  };
+
+  const shownChannel = nudge?.enabled ? nudge.channel : channel;
+  const where = nudge?.recipient?.replace(/^tg:/, "Telegram ");
+  const hint =
+    shownChannel === "telegram"
+      ? join?.telegramBot && `Message @${join.telegramBot} on Telegram once so Willow can text you back.`
+      : join?.imessageNumber && join.joinCode && `Text ${join.joinCode} to ${join.imessageNumber} once so Willow can text you back.`;
+
   return (
-    <Row icon="💬" onPress={enabled === undefined ? undefined : () => setDailyNudge({ userId, enabled: !enabled })}>
-      <View style={{ flex: 1 }}>
-        <Question size={14}>Daily nudge over text</Question>
-        <T style={{ fontSize: 11.5 * s, color: colors.muted, marginTop: 2 * s }}>Willow texts your daily wish check-in.</T>
-      </View>
-      <T style={{ fontFamily: fonts.sansBold, fontSize: 11 * s, color: enabled ? colors.red : colors.faint }}>
-        {enabled === undefined ? "…" : enabled ? "ON" : "OFF"}
-      </T>
-    </Row>
+    <View>
+      <Row
+        icon="💬"
+        onPress={nudge === undefined ? undefined : nudge.enabled ? () => setDailyNudge({ userId, enabled: false }) : () => setEditing(!editing)}
+      >
+        <View style={{ flex: 1 }}>
+          <Question size={14}>Daily nudge over text</Question>
+          <T style={{ fontSize: 11.5 * s, color: colors.muted, marginTop: 2 * s }}>
+            {nudge?.enabled && where ? `Willow texts your daily wish check-in to ${where}.` : "Willow texts your daily wish check-in."}
+          </T>
+        </View>
+        <T style={{ fontFamily: fonts.sansBold, fontSize: 11 * s, color: nudge?.enabled ? colors.red : colors.faint }}>
+          {nudge === undefined ? "…" : nudge.enabled ? "ON" : "OFF"}
+        </T>
+      </Row>
+      {!nudge?.enabled && editing && (
+        <View style={{ marginBottom: 10 * s }}>
+          <Chips>
+            <Chip label="iMessage" on={channel === "imessage"} onPress={() => setChannel("imessage")} />
+            <Chip label="Telegram" on={channel === "telegram"} onPress={() => setChannel("telegram")} />
+          </Chips>
+          <VoiceField
+            value={address}
+            onChangeText={setAddress}
+            placeholder={channel === "imessage" ? "Your iMessage number, e.g. +14155550123" : "Your numeric Telegram user ID"}
+            keyboardType={channel === "imessage" ? "phone-pad" : "number-pad"}
+            autoCapitalize="none"
+            onSubmit={turnOn}
+          />
+          {hint && <T style={{ fontSize: 11.5 * s, color: colors.muted, marginTop: 6 * s }}>{hint}</T>}
+          {error && <T style={{ fontSize: 11.5 * s, color: colors.redDeep, marginTop: 6 * s }}>{error}</T>}
+          <CtaButton label="Turn on daily nudge" disabled={!address.trim()} onPress={turnOn} />
+        </View>
+      )}
+      {nudge?.enabled && nudge.delivery !== "delivered" && nudge.delivery !== "queued" && (
+        <T style={{ fontSize: 11.5 * s, color: nudge.delivery === "unreachable" ? colors.redDeep : colors.muted, marginBottom: 10 * s }}>
+          {nudge.delivery === "unreachable" ? "Willow couldn't reach you yet. " : ""}
+          {hint || "Text Willow once first so it can reach you."}
+        </T>
+      )}
+    </View>
   );
 }
 

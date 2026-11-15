@@ -1,4 +1,4 @@
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { useState } from "react";
 import * as WebBrowser from "expo-web-browser";
@@ -293,10 +293,13 @@ function ChipIn({ wish, me }: { wish: Doc<"wishes">; me: Me }) {
 /** Whop payouts on this wish: the recipient claims theirs, the wisher sees progress and retries a failed one. */
 function Payouts({ wish, me }: { wish: Doc<"wishes">; me: Me }) {
   const { s } = useScale();
-  const payouts = useQuery(api.whop.payoutsForWish, { wishId: wish._id, userId: me._id });
+  const { results, status, loadMore } = usePaginatedQuery(
+    api.whop.payoutsForWish,
+    { wishId: wish._id, userId: me._id },
+    { initialNumItems: 20 },
+  );
   const retry = useMutation(api.whop.retryPayout);
-  if (!payouts?.length) return null;
-  return payouts.map((p) => {
+  const rows = results.map((p) => {
     const what = p.kind === "reward" ? "reward" : "contribution";
     if (p.claimUrl) {
       return <CtaButton key={p.paymentId} label={`Claim your $${p.amount} ${what}`} onPress={() => WebBrowser.openBrowserAsync(p.claimUrl!)} />;
@@ -311,4 +314,14 @@ function Payouts({ wish, me }: { wish: Doc<"wishes">; me: Me }) {
       </T>
     );
   });
+  return (
+    <>
+      {rows}
+      {status === "CanLoadMore" && (
+        <Pressable onPress={() => loadMore(20)} accessibilityRole="button">
+          <T style={{ fontFamily: fonts.sansBold, fontSize: 12 * s, color: colors.red, marginTop: 10 * s }}>Show older payouts</T>
+        </Pressable>
+      )}
+    </>
+  );
 }

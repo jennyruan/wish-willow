@@ -36,6 +36,14 @@ export const commentKind = v.union(
 
 export const paymentKind = v.union(v.literal("reward"), v.literal("fund"));
 
+export const nudgeChannel = v.union(v.literal("imessage"), v.literal("telegram"));
+
+export const nudgeDelivery = v.union(
+  v.literal("delivered"),
+  v.literal("queued"),
+  v.literal("unreachable"),
+);
+
 export const notificationKind = v.union(
   v.literal("comment"),
   v.literal("fund"),
@@ -52,6 +60,14 @@ export default defineSchema({
     createdAt: v.number(),
     // Opt-in Keiki "daily nudge over text" (free shared iMessage number / Telegram).
     dailyNudge: v.optional(v.boolean()),
+    // Where the nudge is delivered: the Keiki contact identity, an E.164 phone
+    // number for iMessage or "tg:<numeric user id>" for Telegram.
+    nudgeChannel: v.optional(nudgeChannel),
+    nudgeRecipient: v.optional(v.string()),
+    // Outcome of the latest send. "unreachable" means Keiki has no conversation
+    // with the recipient yet: they have to text the agent once first.
+    nudgeDelivery: v.optional(nudgeDelivery),
+    lastNudgeAt: v.optional(v.number()),
     // Server copy of the client's daily wish-check streak, used to word the nudge.
     streak: v.optional(v.number()),
     lastCheckInAt: v.optional(v.number()),
@@ -141,7 +157,10 @@ export default defineSchema({
       v.literal("paid"),
       v.literal("refunding"),
       v.literal("refunded"),
+      // Automatic refund retries ran out; the daily reconcile cron requeues it.
+      v.literal("refund_failed"),
     ),
+    refundAttempts: v.optional(v.number()),
     checkoutId: v.optional(v.string()),
     checkoutUrl: v.optional(v.string()),
     // The Whop account (biz_) the checkout charged into; payouts are sent from it.
@@ -151,9 +170,19 @@ export default defineSchema({
       v.union(v.literal("sending"), v.literal("sent"), v.literal("failed")),
     ),
     claimUrl: v.optional(v.string()),
+    // Idempotency-Key for the claim-link transfer. It stays the same across
+    // retries so a retry after a lost response returns the original transfer,
+    // and is only replaced after Whop definitively rejects the transfer.
+    payoutKey: v.optional(v.string()),
+    payoutAttempts: v.optional(v.number()),
     createdAt: v.number(),
     paidAt: v.optional(v.number()),
-  }).index("by_wish", ["wishId"]),
+  })
+    .index("by_wish", ["wishId"])
+    .index("by_wish_status", ["wishId", "status"])
+    .index("by_status", ["status"])
+    .index("by_payout", ["payout"])
+    .index("by_whopPaymentId", ["whopPaymentId"]),
 
   notifications: defineTable({
     userId: v.id("users"),

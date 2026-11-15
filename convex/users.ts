@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { nudgeChannel, nudgeDelivery } from "./schema";
 
 // Reusable validator for a returned user document.
 const userDoc = v.object({
@@ -10,6 +11,10 @@ const userDoc = v.object({
   deviceToken: v.string(),
   createdAt: v.number(),
   dailyNudge: v.optional(v.boolean()),
+  nudgeChannel: v.optional(nudgeChannel),
+  nudgeRecipient: v.optional(v.string()),
+  nudgeDelivery: v.optional(nudgeDelivery),
+  lastNudgeAt: v.optional(v.number()),
   streak: v.optional(v.number()),
   lastCheckInAt: v.optional(v.number()),
 });
