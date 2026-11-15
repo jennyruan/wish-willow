@@ -24,6 +24,12 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
+      "output": "single",
+      "bundler": "metro",
+      "name": "Wish Willow",
+      "shortName": "Wish Willow",
+      "themeColor": "#EBE0C6",
+      "backgroundColor": "#EBE0C6",
       "favicon": "./assets/favicon.png"
     },
     "plugins": [

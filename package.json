@@ -6,7 +6,9 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "export:web": "expo export --platform web --clear",
+    "deploy:web": "npm run export:web && npx eas-cli@latest deploy --prod"
   },
   "dependencies": {
     "@expo-google-fonts/anton": "^0.4.2",

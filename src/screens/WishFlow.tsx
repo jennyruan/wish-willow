@@ -9,9 +9,11 @@ import { Twig } from "../components/Logo";
 import { Chip, Chips, CtaButton, GroupLabel, Kicker, Question, Select, Sub, T, VoiceField } from "../components/ui";
 import { colors, fonts, useScale } from "../theme";
 import { uploadToConvex } from "../upload";
+import { voiceSupported } from "../voice";
 import { EXAMPLE_WISHES, type WishKind } from "../wishKinds";
 
 type StepId = "locality" | "location" | "config" | "track" | "photos" | "budget" | "extra" | "privacy" | "blow";
+type CastState = "ready" | "casting" | "cast" | "failed";
 type TimeUnit = "days" | "weeks" | "months" | "years";
 type Place = { label: string; lat: number; lng: number; source: string; fetchedAt: number };
 
@@ -73,7 +75,7 @@ export function WishFlow({
   const steps = STEPS[kind];
   const [i, setI] = useState(0);
   const [a, setA] = useState<Answers>({ locationText: "", place: null, config: {}, track: [], photos: [], note: "", budget: "", timeNum: 3, timeUnit: "months", extra: "", reward: "" });
-  const [castState, setCastState] = useState<"casting" | "cast" | "failed">("casting");
+  const [castState, setCastState] = useState<CastState>("casting");
   const create = useMutation(api.wishes.create);
   const generateUploadUrl = useMutation(api.files.generateUploadUrl);
   const step = steps[i];
@@ -125,11 +127,16 @@ export function WishFlow({
     }
   };
 
+  const readyToBlow = () => {
+    setCastState("ready");
+    setI(steps.indexOf("blow"));
+  };
+
   if (step === "blow") {
     return (
       <>
         <TopBar handle={me.handle} />
-        <Blow state={castState} isPublic={a.visibility === "public"} onSee={onDone} onRetry={cast} />
+        <Blow state={castState} isPublic={a.visibility === "public"} onBlow={cast} onSee={onDone} />
       </>
     );
   }
@@ -245,7 +252,7 @@ export function WishFlow({
           <>
             <Kicker>One more thing</Kicker>
             <Question>Anything else I should know?</Question>
-            <VoiceField multiline value={a.extra} onChangeText={(extra) => set({ extra })} placeholder="speak freely — the more I know you, the better I help…" style={{ marginTop: 20 * s }} />
+            <VoiceField multiline value={a.extra} onChangeText={(extra) => set({ extra })} placeholder={`${voiceSupported ? "speak" : "write"} freely — the more I know you, the better I help…`} style={{ marginTop: 20 * s }} />
           </>
         )}
 
@@ -256,7 +263,7 @@ export function WishFlow({
             <Option title="🌍 Public" body="You, Willow & the community — others can help, and you reward whoever does." on={a.visibility === "public"} onPress={() => set({ visibility: "public" })}>
               {a.visibility === "public" && <RewardBox value={a.reward} onChange={(reward) => set({ reward })} />}
             </Option>
-            <CtaButton label="Confirm & cast" onPress={cast} disabled={!a.visibility} />
+            <CtaButton label="Confirm & cast" onPress={native ? cast : readyToBlow} disabled={!a.visibility} />
           </>
         )}
 
@@ -441,32 +448,51 @@ function Catkin({ dx, dy, rotate, delay }: { dx: number; dy: number; rotate: num
   );
 }
 
-/** Catkins scatter from the twig while the wish is saved; the CTA fades in once it's cast. */
-function Blow({ state, isPublic, onSee, onRetry }: { state: "casting" | "cast" | "failed"; isPublic: boolean; onSee: () => void; onRetry: () => void }) {
+/**
+ * Catkins scatter from the twig while the wish is saved; the CTA fades in once it's cast.
+ * On web there's no blow gesture, so the twig waits in "ready" for a tap or click that casts the wish.
+ */
+function Blow({ state, isPublic, onBlow, onSee }: { state: CastState; isPublic: boolean; onBlow: () => void; onSee: () => void }) {
   const { s } = useScale();
   const cta = useRef(new Animated.Value(0)).current;
   const [minElapsed, setMinElapsed] = useState(false);
+  const waiting = state === "ready";
   useEffect(() => {
+    if (waiting) return;
     const timer = setTimeout(() => setMinElapsed(true), 1800);
     return () => clearTimeout(timer);
-  }, []);
-  const ready = (minElapsed && state === "cast") || state === "failed";
+  }, [waiting]);
+  const done = (minElapsed && state === "cast") || state === "failed";
   useEffect(() => {
-    Animated.timing(cta, { toValue: ready ? 1 : 0, duration: 500, useNativeDriver: native }).start();
-  }, [ready, cta]);
+    Animated.timing(cta, { toValue: done ? 1 : 0, duration: 500, useNativeDriver: native }).start();
+  }, [done, cta]);
+
+  if (state === "ready") {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 20 * s }}>
+        <Pressable onPress={onBlow} accessibilityRole="button" accessibilityLabel="Blow on the twig to cast your wish" style={({ pressed }) => ({ padding: 16 * s, transform: [{ scale: pressed ? 0.94 : 1 }], cursor: "pointer" }) as object}>
+          <Twig width={58 * s} height={112 * s} />
+        </Pressable>
+        <Question size={24} style={{ marginTop: 6 * s, textAlign: "center" }}>Blow your wish 🌬</Question>
+        <Sub style={{ textAlign: "center" }}>Tap the twig to send the catkins flying.</Sub>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 20 * s }}>
       {CATKINS.map(([dx, dy, rotate, delay], idx) => (
         <Catkin key={idx} dx={dx} dy={dy} rotate={rotate} delay={delay} />
       ))}
-      <Twig width={58 * s} height={112 * s} />
-      <Question size={24} style={{ marginTop: 22 * s, textAlign: "center" }}>Wish cast 🌬</Question>
+      <View style={{ padding: 16 * s }}>
+        <Twig width={58 * s} height={112 * s} />
+      </View>
+      <Question size={24} style={{ marginTop: 6 * s, textAlign: "center" }}>Wish cast 🌬</Question>
       <Sub style={{ textAlign: "center" }}>
         {state === "failed" ? "Couldn’t save your wish — check your connection and try again." : isPublic ? "Posted to the grove. Willow’s on it." : "Willow’s on it."}
       </Sub>
-      <Animated.View style={{ opacity: cta, width: "100%", maxWidth: 220 * s, marginTop: 6 * s }} pointerEvents={ready ? "auto" : "none"}>
-        <CtaButton label={state === "failed" ? "Try again" : "See my wishes"} onPress={state === "failed" ? onRetry : onSee} />
+      <Animated.View style={{ opacity: cta, width: "100%", maxWidth: 220 * s, marginTop: 6 * s }} pointerEvents={done ? "auto" : "none"}>
+        <CtaButton label={state === "failed" ? "Try again" : "See my wishes"} onPress={state === "failed" ? onBlow : onSee} />
       </Animated.View>
     </View>
   );

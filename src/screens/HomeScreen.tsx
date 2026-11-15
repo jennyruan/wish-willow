@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Platform, Pressable, View } from "react-native";
 import { LogoMark, Wordmark } from "../components/Logo";
 import { Avatar, Question, T, VoiceField } from "../components/ui";
 import { colors, fonts, useScale } from "../theme";
+import { voiceSupported } from "../voice";
 import { EXAMPLE_WISHES, WISH_EMOJI, type WishKind } from "../wishKinds";
 
 /** The "I Wish" home: brand + handle row, four example wishes, custom wish pinned at the bottom. */
@@ -74,7 +75,7 @@ export function HomeScreen({
 
         <View style={{ flex: 1, minHeight: 4 * s }} />
         <T style={{ textAlign: "center", fontSize: 10 * s, letterSpacing: 10 * s * 0.18, textTransform: "uppercase", color: colors.faint, marginBottom: 6 * s }}>
-          speak or type your own wish
+          {voiceSupported ? "speak or type your own wish" : "type your own wish"}
         </T>
         <VoiceField value={wish} onChangeText={setWish} onSubmit={submit} placeholder="I wish…" returnKeyType="go" style={{ marginTop: 0 }} />
       </View>
