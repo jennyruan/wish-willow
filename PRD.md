@@ -102,11 +102,13 @@ media         // Convex file storage (photo/video), referenced by mediaId
 
 **Every user has a wish list** (`listMine` / `countMine`): their own wishes, newest first; realized ones shown as **reality**.
 
-### 8. Access & distribution (zero-install) — two complementary channels
-Wish Willow's demo value is **multi-user participation** (friends on their own phones, each a distinct handle, commenting on and helping each other's wishes). Distribution (friends participate) and verification/review (judges + CI) are **different jobs served by different channels** — we run both, neither replaces the other.
+### 8. Access & distribution — primary (Capy → Revyl) + optional (Expo Web)
+The hackathon stack **Capy + Revyl + Convex is "Required to win."** The app is an **Expo** app; Convex is the backend (via `EXPO_PUBLIC_CONVEX_URL`); it is built and demoed through **Capy → Revyl**, not through a self-hosted web URL. Two channels, clear priority:
 
-- **Channel A — participation (Expo Web + EAS Hosting):** the friends-use-it-together surface. A **public web link + QR** → same Convex backend → **no install, no account gate**. Built as **Expo Web (react-native-web)**, one codebase, deployed on **EAS Hosting**, with **tap/type fallbacks** for the native-only voice/blow bits. This is how the room, and friends remotely, join by handle and interact concurrently. *(Wisher/demoer who wants voice + blow: native app via Expo Go / TestFlight.)*
-- **Channel B — verification + review (Revyl Proof of Changes):** Revyl runs the real app on **cloud devices** to (1) **auto-test every PR** (visual "proof of changes", screenshots + verdict posted on the PR) and (2) give a **shareable live preview link + recorded session replay** — the reliable "latest build" walkthrough for **judges / the pitch**. Setup is via Revyl's agent-setup prompt (`revyl.com/agent-setup/prompt.md`), run by Capy; Jenny supplies the Revyl API key + approves the Revyl GitHub App (her credential/account actions). Needs the app to exist + an EAS build, so it sits **on top of** Channel A. It is a review/CI surface — **not** the way friends independently participate (preview sessions are review-oriented, likely gated behind Revyl access).
+- **Channel A — PRIMARY: judge + required integration (Capy Cloud Build → Revyl cloud phone).** Capy builds the **Expo iOS simulator build on Revyl's runners** (JS bundled, `EXPO_PUBLIC_CONVEX_URL` set) and launches it on a **cloud phone** (`viewer_url`) the judge can drive — full **native** experience (voice + blow). This path *"needs no Revyl account, key or environment variable"* (hackathon Revyl page) — Capy's own Capy↔Revyl integration handles it (needs Capy Pro+, **covered by the free Capy Max month**). Proof of Changes adds a plain-English validation + recorded session on PRs. Multi-user can be shown here with **2 cloud phones** (both hit the same Convex backend → they see each other live). Build prompt (hackathon-sanctioned): *"Build the iOS app in this repo on Revyl as a standalone simulator build with the JavaScript bundled and `EXPO_PUBLIC_CONVEX_URL` set."*
+- **Channel B — OPTIONAL: friends self-serve (Expo Web + Vercel).** A **public web link + QR** → same Convex backend → **no install, no account**. Built as **Expo Web (react-native-web)** with tap/type fallbacks for the native-only voice/blow. This is how ~15 friends participate concurrently on their **own phones** (Revyl's interactive sessions are capped at 2 Free / 10 Pro, so Revyl is *not* the mass-share surface). Host on **Vercel** (account ready — avoids EAS login); EAS Hosting is the fallback. Not required for judging — a bonus for reach/virality.
+
+> **Env/keys (per hackathon pages):** store `CONVEX_DEPLOY_KEY` (Convex dev deployment, "Select all") in Capy project env; ensure `EXPO_PUBLIC_CONVEX_URL` is set wherever the build runs (`.env.local` is git-ignored, so set it in the Revyl build env / Capy env). Convex free tier = 1M function calls/mo. Convex is backend-only — it does **not** host the frontend; the web URL (if used) comes from Vercel/EAS.
 
 ### 9. Design system (hand to Capy as the design contract)
 Vintage novelty / two-color letterpress. Colors: `paper #EBE0C6 · red #B23A2C · red-deep #8E2C20 · ink #241C16 · ochre #C68A38`. Fonts: **Anton** (logotype/buttons) · **Yeseva One** (the "wish" voice / questions) · **DM Sans** (body/UI). Motifs: willow-twig roundel logo, starbursts, "1 wish" badge, letterpress grain, stamp-buttons with hard red-deep drop-shadow, catkin blow animation. Reference the aesthetic, draw original marks (not the film's artifact). Reference mockup: `wish-willow-demo.html`; logo: `wish-willow-logo.svg`.
@@ -118,7 +120,8 @@ Vintage novelty / two-color letterpress. Colors: `paper #EBE0C6 · red #B23A2C �
 ## ── FOR THE AGENT (Capy build contract) ──
 
 ### 10. Scope
-- **v1 IN:** the flow (splash → I Wish → clarify → private/public → blow), 4 demo wish types, join-by-handle (unique handles), wish list, Engine A (safe form: OpenAI clarify + online research → a real result within budget/timeline; Deepgram STT + Aura TTS; **Supermemory** remembers-you profile), Engine B public feed + comments all-public (text/photo/video) + reward-on-select (Whop, no cap), **DMs** (tap-author or by handle), mark-as-reality, zero-install Expo Web (EAS Hosting) participation surface, one Revyl smoke test.
+- **v1 IN:** the flow (splash → I Wish → clarify → private/public → blow), 4 demo wish types, join-by-handle (unique handles), wish list, Engine A (safe form: OpenAI clarify + online research → a real result within budget/timeline; Deepgram STT + Aura TTS; **Supermemory** remembers-you profile), Engine B public feed + comments all-public (text/photo/video) + reward-on-select (Whop, no cap), **DMs** (tap-author or by handle), mark-as-reality; **Capy Cloud Build → Revyl cloud phone** (required-to-win integration) with Proof of Changes.
+- **Optional / bonus:** zero-install Expo Web on Vercel (friends self-serve participation surface).
 - **Stretch:** unattended Engine A spend, Keiki iMessage nudge.
 - **OUT:** real matchmaking of specific strangers without consent; production auth.
 
@@ -126,9 +129,9 @@ Vintage novelty / two-color letterpress. Colors: `paper #EBE0C6 · red #B23A2C �
 1. **Backend** — add the Convex schema + functions (users/wishes/comments/dms/files/seed) verbatim; run seed; verify `listPublic`/`listForWish` reactive.
 2. **Identity + wish + wish list** — join-by-handle on launch; create wish; wish-list home (realized = reality); public feed.
 3. **Community** — comment thread (text/photo/video via upload), **comments all public (no gate)** with owner remove/delete as a safety net, mark-as-reality; **DMs**.
-4. **Zero-install web** — Expo Web participation surface (feed/wish/comment/DM) + QR; tap fallbacks for voice/blow.
+4. **Capy Cloud Build → Revyl (PRIMARY, required-to-win)** — ensure `CONVEX_DEPLOY_KEY` + `EXPO_PUBLIC_CONVEX_URL` are set in Capy env; Capy builds the Expo iOS simulator build on Revyl (JS bundled) and launches it on a cloud phone (`viewer_url`); enable Proof of Changes (plain-English validation) on PRs. This is the judge-facing + required integration path.
 5. **Engine A** — Willow assembles a budgeted result + one-tap authorize (single-use card pattern).
-6. **Polish + Revyl Proof of Changes** — wire Revyl (agent-setup prompt, run by Capy; Jenny adds API key + approves the GitHub App): PR-triggered visual tests on a cloud/EAS build + a shareable preview link & session replay for the pitch. At least one English flow passes; capture the recording.
+6. **(Optional) Zero-install web** — Expo Web participation surface (feed/wish/comment/DM) + QR, deployed to **Vercel** (EAS fallback); tap fallbacks for voice/blow. Friends-only bonus — not required for judging.
 
 ### 12. Verify
 - `npx convex dev` compiles (validators/indexes clean); seed populates demo data (self-evidently labeled).
