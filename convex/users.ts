@@ -98,6 +98,19 @@ export const me = query({
 });
 
 /**
+ * Public handles for a set of user ids (e.g. the authors on the public feed).
+ * Returns only id + handle so device tokens never leave the server here.
+ */
+export const handles = query({
+  args: { ids: v.array(v.id("users")) },
+  returns: v.array(v.object({ _id: v.id("users"), handle: v.string() })),
+  handler: async (ctx, args) => {
+    const users = await Promise.all(args.ids.slice(0, 100).map((id) => ctx.db.get(id)));
+    return users.flatMap((u) => (u ? [{ _id: u._id, handle: u.handle }] : []));
+  },
+});
+
+/**
  * Resolve a user by their (unique) handle — lets a client start a DM or look
  * someone up by just typing a handle. Returns null if no such handle.
  */

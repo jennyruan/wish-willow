@@ -11,8 +11,10 @@
 import type * as comments from "../comments.js";
 import type * as dms from "../dms.js";
 import type * as files from "../files.js";
+import type * as geo from "../geo.js";
 import type * as seed from "../seed.js";
 import type * as users from "../users.js";
+import type * as voice from "../voice.js";
 import type * as wishes from "../wishes.js";
 
 import type {
@@ -25,8 +27,10 @@ declare const fullApi: ApiFromModules<{
   comments: typeof comments;
   dms: typeof dms;
   files: typeof files;
+  geo: typeof geo;
   seed: typeof seed;
   users: typeof users;
+  voice: typeof voice;
   wishes: typeof wishes;
 }>;
 

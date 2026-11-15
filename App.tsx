@@ -1,27 +1,35 @@
+import { Anton_400Regular } from "@expo-google-fonts/anton/400Regular";
+import { DMSans_400Regular } from "@expo-google-fonts/dm-sans/400Regular";
+import { DMSans_500Medium } from "@expo-google-fonts/dm-sans/500Medium";
+import { DMSans_700Bold } from "@expo-google-fonts/dm-sans/700Bold";
+import { YesevaOne_400Regular } from "@expo-google-fonts/yeseva-one/400Regular";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
+import { useFonts } from "expo-font";
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View } from "react-native";
+import { View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { Root } from "./src/Root";
+import { colors } from "./src/theme";
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
 });
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Anton: Anton_400Regular,
+    YesevaOne: YesevaOne_400Regular,
+    DMSans: DMSans_400Regular,
+    "DMSans-Medium": DMSans_500Medium,
+    "DMSans-Bold": DMSans_700Bold,
+  });
+
   return (
     <ConvexProvider client={convex}>
-      <View style={styles.container}>
-        <Text>Wish Willow</Text>
-        <StatusBar style="auto" />
-      </View>
+      <SafeAreaProvider>
+        <StatusBar style="dark" />
+        {fontsLoaded ? <Root /> : <View style={{ flex: 1, backgroundColor: colors.paper }} />}
+      </SafeAreaProvider>
     </ConvexProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#EBE0C6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
