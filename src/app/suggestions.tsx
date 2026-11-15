@@ -11,7 +11,7 @@ import { api } from "../../convex/_generated/api";
 import { DEMO_USER_ID } from "../lib/demoUser";
 
 export default function Suggestions() {
-  const suggestions = useQuery(api.suggestions.listPending);
+  const suggestions = useQuery(api.suggestions.listPending, { userId: DEMO_USER_ID });
   const setStatus = useMutation(api.suggestions.setStatus);
 
   if (suggestions === undefined) {

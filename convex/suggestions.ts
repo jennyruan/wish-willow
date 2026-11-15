@@ -5,15 +5,21 @@ import { recordFeedback } from "./preferences";
 import { suggestionStatus } from "./schema";
 
 export const listPending = query({
-  args: {},
-  handler: async (ctx) => {
-    const pending = await ctx.db
-      .query("suggestions")
-      .withIndex("by_status", (q) => q.eq("status", "pending"))
-      .collect();
-    return pending.sort(
-      (a, b) => (a.rank ?? Number.MAX_SAFE_INTEGER) - (b.rank ?? Number.MAX_SAFE_INTEGER),
-    );
+  args: { userId: v.string() },
+  handler: async (ctx, { userId }) => {
+    const [pending, ranking] = await Promise.all([
+      ctx.db
+        .query("suggestions")
+        .withIndex("by_status", (q) => q.eq("status", "pending"))
+        .collect(),
+      ctx.db
+        .query("rankings")
+        .withIndex("by_userId", (q) => q.eq("userId", userId))
+        .unique(),
+    ]);
+    const rank = new Map<string, number>(ranking?.orderedIds.map((id, index) => [id, index]));
+    const unranked = Number.MAX_SAFE_INTEGER;
+    return pending.sort((a, b) => (rank.get(a._id) ?? unranked) - (rank.get(b._id) ?? unranked));
   },
 });
 
@@ -29,7 +35,10 @@ export const setStatus = mutation({
     await recordFeedback(ctx, userId, suggestion.category, accepted);
     const text = `${accepted ? "Likes" : "Dislikes"} ${suggestion.category}: ${status} "${suggestion.title}" at ${suggestion.place} in ${suggestion.neighborhood} (${suggestion.when}).`;
     await ctx.scheduler.runAfter(0, internal.memory.rememberPreference, { userId, text });
-    await ctx.scheduler.runAfter(0, internal.ranking.rankSuggestions, { userId });
+    await ctx.scheduler.runAfter(0, internal.ranking.rankSuggestions, {
+      userId,
+      requestedAt: Date.now(),
+    });
   },
 });
 
@@ -44,10 +53,16 @@ export const listPendingInternal = internalQuery({
 });
 
 export const applyRanking = internalMutation({
-  args: { orderedIds: v.array(v.id("suggestions")) },
-  handler: async (ctx, { orderedIds }) => {
-    for (const [rank, id] of orderedIds.entries()) {
-      await ctx.db.patch(id, { rank });
+  args: { userId: v.string(), orderedIds: v.array(v.id("suggestions")), requestedAt: v.number() },
+  handler: async (ctx, { userId, orderedIds, requestedAt }) => {
+    const existing = await ctx.db
+      .query("rankings")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .unique();
+    if (!existing) {
+      await ctx.db.insert("rankings", { userId, orderedIds, requestedAt });
+    } else if (existing.requestedAt <= requestedAt) {
+      await ctx.db.patch(existing._id, { orderedIds, requestedAt });
     }
   },
 });

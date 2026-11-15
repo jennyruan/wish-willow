@@ -6,8 +6,8 @@ import { internalAction } from "./_generated/server";
 const RANKING_MODEL = "claude-haiku-4-5";
 
 export const rankSuggestions = internalAction({
-  args: { userId: v.string() },
-  handler: async (ctx, { userId }) => {
+  args: { userId: v.string(), requestedAt: v.number() },
+  handler: async (ctx, { userId, requestedAt }) => {
     const [pending, wish, preferences] = await Promise.all([
       ctx.runQuery(internal.suggestions.listPendingInternal, {}),
       ctx.runQuery(internal.wishes.latestForUser, { userId }),
@@ -22,19 +22,23 @@ export const rankSuggestions = internalAction({
         : "What kinds of activities and places does the user like and dislike?",
     });
 
-    const llmOrder = await rankWithLlm(buildRankingPrompt(pending, wish, memory), pending);
+    const llmOrder = await rankWithLlm(
+      buildRankingPrompt(pending, wish, preferences, memory),
+      pending,
+    );
     const orderedIds =
       llmOrder ??
       [...pending]
         .sort((a, b) => preferenceScore(b, preferences) - preferenceScore(a, preferences))
         .map((suggestion) => suggestion._id);
-    await ctx.runMutation(internal.suggestions.applyRanking, { orderedIds });
+    await ctx.runMutation(internal.suggestions.applyRanking, { userId, orderedIds, requestedAt });
   },
 });
 
 function buildRankingPrompt(
   pending: Doc<"suggestions">[],
   wish: Doc<"wishes"> | null,
+  preferences: Doc<"preferences"> | null,
   memory: string,
 ) {
   const candidates = pending
@@ -43,15 +47,21 @@ function buildRankingPrompt(
         `- id: ${s._id} | ${s.category} | ${s.title} | ${s.place}, ${s.neighborhood} | ${s.when}`,
     )
     .join("\n");
+  const intake = Object.entries(wish?.intake ?? {}).map(([q, a]) => `- ${q}: ${a}`);
   return [
     "You are Willow, a warm companion helping the user keep one wish by suggesting real places and events.",
     `The user's wish: ${wish?.text ?? "unknown yet"}`,
+    intake.length > 0 && `Their intake answers:\n${intake.join("\n")}`,
     "What you remember about the user (lean into what they like, avoid what they dislike):",
     memory || "Nothing yet.",
+    `Categories they accepted recently: ${preferences?.liked.join(", ") || "none"}`,
+    `Categories they declined recently: ${preferences?.disliked.join(", ") || "none"}`,
     "Rank these candidate suggestions from best to worst fit for the user right now:",
     candidates,
     'Reply with only a JSON array of the candidate ids in ranked order, for example ["id1","id2"].',
-  ].join("\n\n");
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 }
 
 async function rankWithLlm(

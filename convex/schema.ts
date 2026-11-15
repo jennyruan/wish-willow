@@ -26,8 +26,12 @@ export default defineSchema({
     neighborhood: v.string(),
     zip: v.string(),
     status: suggestionStatus,
-    rank: v.optional(v.number()),
   }).index("by_status", ["status"]),
+  rankings: defineTable({
+    userId: v.string(),
+    orderedIds: v.array(v.id("suggestions")),
+    requestedAt: v.number(),
+  }).index("by_userId", ["userId"]),
   preferences: defineTable({
     userId: v.string(),
     liked: v.array(v.string()),

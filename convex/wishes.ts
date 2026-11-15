@@ -20,6 +20,7 @@ export const create = mutation({
     });
     await ctx.scheduler.runAfter(0, internal.ranking.rankSuggestions, {
       userId: args.userId,
+      requestedAt: Date.now(),
     });
     return wishId;
   },
