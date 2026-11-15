@@ -40,9 +40,15 @@ export default defineSchema({
     avatarId: v.optional(v.id("_storage")),
     deviceToken: v.string(),
     createdAt: v.number(),
+    // Opt-in Keiki "daily nudge over text" (free shared iMessage number / Telegram).
+    dailyNudge: v.optional(v.boolean()),
+    // Server copy of the client's daily wish-check streak, used to word the nudge.
+    streak: v.optional(v.number()),
+    lastCheckInAt: v.optional(v.number()),
   })
     .index("by_deviceToken", ["deviceToken"])
-    .index("by_handle", ["handle"]),
+    .index("by_handle", ["handle"])
+    .index("by_dailyNudge", ["dailyNudge"]),
 
   wishes: defineTable({
     ownerId: v.id("users"),

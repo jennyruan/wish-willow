@@ -27,7 +27,7 @@ type Route =
 export function Root() {
   const { identity, join } = useIdentity();
   const getOrCreateConversation = useMutation(api.dms.getOrCreateConversation);
-  const streak = useStreak();
+  const streak = useStreak(identity.status === "ready" ? identity.user._id : undefined);
   const [splashDone, setSplashDone] = useState(false);
   const [route, setRoute] = useState<Route>({ name: "home" });
   const finishSplash = useCallback(() => setSplashDone(true), []);

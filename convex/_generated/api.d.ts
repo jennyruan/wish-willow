@@ -9,9 +9,11 @@
  */
 
 import type * as comments from "../comments.js";
+import type * as crons from "../crons.js";
 import type * as dms from "../dms.js";
 import type * as files from "../files.js";
 import type * as geo from "../geo.js";
+import type * as nudge from "../nudge.js";
 import type * as seed from "../seed.js";
 import type * as users from "../users.js";
 import type * as voice from "../voice.js";
@@ -25,9 +27,11 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   comments: typeof comments;
+  crons: typeof crons;
   dms: typeof dms;
   files: typeof files;
   geo: typeof geo;
+  nudge: typeof nudge;
   seed: typeof seed;
   users: typeof users;
   voice: typeof voice;
