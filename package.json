@@ -11,7 +11,9 @@
   "dependencies": {
     "convex": "^1.50.0",
     "expo": "~55.0.32",
+    "expo-asset": "~55.0.20",
     "expo-audio": "~55.0.18",
+    "expo-constants": "~55.0.17",
     "expo-status-bar": "~55.0.6",
     "react": "19.2.0",
     "react-native": "0.83.10"
