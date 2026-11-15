@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wish Willow — Interactive Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700&family=Yeseva+One&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#EBE0C6;--paper-2:#E2D4B4;--cream-light:#F4ECD8;--red:#B23A2C;--red-deep:#8E2C20;--ink:#241C16;--ochre:#C68A38;--line:#C9B98F}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"DM Sans",system-ui,sans-serif;color:var(--ink);
+    background:radial-gradient(120% 90% at 50% -10%,#87837a 0%,#5d594f 70%);
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:30px 16px 60px;-webkit-font-smoothing:antialiased}
+  .paper{background-color:var(--paper);
+    background-image:radial-gradient(circle at 20% 30%,rgba(0,0,0,.035) 0 1px,transparent 1px),
+      radial-gradient(circle at 70% 60%,rgba(0,0,0,.03) 0 1px,transparent 1px),
+      linear-gradient(180deg,rgba(255,255,255,.18),rgba(0,0,0,.05));
+    background-size:7px 7px,9px 9px,100% 100%}
+  .hero{text-align:center;color:#efe7d4;margin-bottom:22px}
+  .logo{font-family:"Anton",sans-serif;letter-spacing:.06em;font-size:46px;color:#F4ECD8;text-shadow:3px 3px 0 var(--red-deep),5px 5px 0 rgba(0,0,0,.25)}
+  .logo .amp{color:var(--red)}
+  .kicker{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:#d8cfbb;margin-top:8px}
+
+  .phone{width:330px;height:680px;border-radius:46px;background:#1a1510;padding:11px;
+    box-shadow:0 26px 50px rgba(0,0,0,.45),inset 0 0 0 2px #38302a;position:relative}
+  .notch{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#1a1510;border-radius:0 0 16px 16px;z-index:5}
+  .screen{width:100%;height:100%;border-radius:36px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+  .vignette{position:absolute;inset:0;pointer-events:none;border-radius:36px;box-shadow:inset 0 0 60px rgba(60,40,20,.28);z-index:6}
+  .statusbar{display:flex;justify-content:space-between;padding:15px 24px 0;font-size:11px;font-weight:700;color:var(--ink);opacity:.6}
+  .top{display:flex;align-items:center;justify-content:center;position:relative;padding:8px 24px 0}
+  .mark{font-family:"Anton",sans-serif;font-size:11px;letter-spacing:.22em;color:var(--red-deep);opacity:.75}
+  .mark .s{color:var(--ink)}
+  .back{position:absolute;left:22px;top:6px;font-size:18px;color:var(--ink);opacity:.5;background:none;border:none;cursor:pointer}
+  .dots{display:flex;gap:6px;justify-content:center;padding:12px 0 2px}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--line)}
+  .dot.on{background:var(--red);width:18px;border-radius:4px}
+
+  .body{flex:1;display:flex;flex-direction:column;padding:12px 22px 14px;position:relative;z-index:2;overflow-y:auto}
+  .body::-webkit-scrollbar{width:0}
+  .step{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ochre);font-weight:700;margin-bottom:7px}
+  .q{font-family:"Yeseva One",serif;font-size:26px;line-height:1.14;color:var(--ink)}
+  .q.big{font-size:26px;text-align:center;margin-top:6px}
+  .sub{font-size:12.5px;color:#7a6b53;margin-top:8px;line-height:1.4}
+
+  .chips{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}
+  .group-label{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#9a8a68;margin:16px 0 2px;font-weight:700}
+  .chip{border:1.5px solid var(--red);color:var(--red);border-radius:22px;padding:9px 15px;font-size:13px;font-weight:500;background:transparent;cursor:pointer;transition:.12s}
+  .chip.on{background:var(--red);color:var(--cream-light);box-shadow:0 3px 0 var(--red-deep)}
+  .chip .sw{display:inline-block;width:13px;height:13px;border-radius:50%;border:1px solid rgba(0,0,0,.25);margin-right:6px;vertical-align:-2px}
+
+  .input{margin-top:14px;display:flex;align-items:center;gap:8px;background:var(--cream-light);border:1.5px solid var(--line);border-radius:14px;padding:6px 8px 6px 14px}
+  .input input,.input textarea{flex:1;border:none;background:none;outline:none;font-family:"DM Sans";font-size:13.5px;color:var(--ink);resize:none}
+  .input textarea{min-height:92px;padding-top:6px}
+  .input .ph::placeholder{color:#9a8a68}
+  .mic{width:36px;height:36px;border-radius:50%;background:var(--red);flex:none;display:flex;align-items:center;justify-content:center;color:var(--cream-light);font-size:16px;box-shadow:0 3px 0 var(--red-deep);cursor:pointer}
+  .processed{margin-top:12px;background:var(--paper-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:12.5px;color:#4a3f33;display:none}
+  .processed.show{display:block}
+  .hide{display:none}
+  .timing{display:flex;gap:10px;margin-top:8px}
+  .tsel{flex:1;background:var(--cream-light);border:1.5px solid var(--line);border-radius:12px;padding:12px 36px 12px 14px;font-size:14px;color:var(--ink);font-family:"DM Sans";-webkit-appearance:none;appearance:none;cursor:pointer;
+    background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="8"><path d="M1 1l5 5 5-5" fill="none" stroke="%23B23A2C" stroke-width="2"/></svg>');
+    background-repeat:no-repeat;background-position:right 13px center}
+  .processed b{color:var(--red-deep)}
+
+  .addphotos{display:inline-flex;align-items:center;gap:8px;margin-top:14px;border:1.5px solid var(--red);color:var(--red);border-radius:12px;padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer}
+  .addphotos input{display:none}
+  .photos{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .ptile{width:64px;height:84px;border:2px dashed var(--red);border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--cream-light)}
+  .ptile img{width:100%;height:100%;object-fit:cover}
+
+  .opt{border:1.5px solid var(--line);border-radius:14px;padding:13px 14px;margin-top:12px;background:var(--cream-light);cursor:pointer}
+  .opt.on{border-color:var(--red);box-shadow:0 3px 0 rgba(178,58,44,.25)}
+  .opt .t{font-family:"Anton",sans-serif;letter-spacing:.04em;text-transform:uppercase;font-size:14px;color:var(--ink);display:flex;align-items:center;gap:7px}
+  .opt .t .tag{margin-left:auto;font-family:"DM Sans";font-weight:700;font-size:10px;letter-spacing:.1em;color:var(--red)}
+  .opt p{font-size:11.5px;color:#6a5b45;margin-top:5px;line-height:1.35}
+  .reward{margin-top:11px;display:none;background:var(--paper-2);border:1px dashed var(--red);border-radius:11px;padding:10px 12px}
+  .reward.show{display:block}
+  .rewardpicks{display:flex;gap:6px;margin-bottom:9px}
+  .rchip{flex:1;text-align:center;border:1.5px solid var(--red);color:var(--red);border-radius:16px;padding:7px 0;font-size:12px;font-weight:600;cursor:pointer}
+  .rchip.on{background:var(--red);color:var(--cream-light);box-shadow:0 2px 0 var(--red-deep)}
+  .rewardinput{display:flex;align-items:center;gap:8px}
+  .reward .dollar{font-family:"Anton",sans-serif;color:var(--red);font-size:20px}
+  .reward input{flex:1;border:none;background:none;outline:none;font-size:14px;color:var(--ink)}
+  .reward .u{font-size:10px;color:#9a8a68;letter-spacing:.08em}
+
+  .cta{margin-top:18px;width:100%;background:var(--red);color:var(--cream-light);border:none;font-family:"Anton",sans-serif;letter-spacing:.07em;text-transform:uppercase;font-size:16px;padding:15px;border-radius:13px;box-shadow:0 5px 0 var(--red-deep);cursor:pointer}
+  .cta.ghost{background:transparent;color:var(--red);box-shadow:none;border:2px solid var(--red)}
+  .actbtn{margin-top:11px;width:100%;display:block;text-align:center;text-decoration:none;background:var(--red);color:var(--cream-light);border:none;font-family:"Anton",sans-serif;letter-spacing:.05em;text-transform:uppercase;font-size:12.5px;padding:10px;border-radius:10px;box-shadow:0 3px 0 var(--red-deep);cursor:pointer}
+  .actbtn.ghost{background:transparent;color:var(--red);box-shadow:none;border:1.5px solid var(--red)}
+  .done{margin-top:11px;font-size:12px;color:var(--red-deep);font-weight:700;text-align:center}
+  .draftbox{margin-top:11px;background:var(--paper-2);border:1px dashed var(--red);border-radius:11px;padding:10px 12px}
+  .draftlbl{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--red);font-weight:700}
+  .drafttitle{font-family:"Yeseva One",serif;font-size:14px;color:var(--ink);margin:4px 0 3px}
+  .draftpost{font-size:12px;color:#5a4d3c;line-height:1.4}
+  .sitelbl{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#9a8a68;font-weight:700;margin-top:12px;margin-bottom:-2px}
+
+  .wishcard{border:2px solid var(--red);border-radius:13px;padding:10px 14px;margin-top:8px;cursor:pointer;background:var(--cream-light);display:flex;align-items:center;gap:12px;transition:.12s}
+  .wishcard:hover{box-shadow:0 5px 0 var(--red-deep);transform:translateY(-2px)}
+  .wishcard .ic{font-size:21px}
+  .wishcard .t{font-family:"Yeseva One",serif;font-size:15px;line-height:1.14;color:var(--ink)}
+  .wishcard .d{font-size:11px;color:#8a7a5c;margin-top:2px}
+
+  .starline{text-align:center;color:var(--red);letter-spacing:.5em;font-size:11px;opacity:.6;margin:7px 0}
+
+  /* welcome / splash */
+  .welcome{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;animation:welcomeIn .8s ease both}
+  @keyframes welcomeIn{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}
+  .welcome .bw{font-family:"Anton",sans-serif;font-size:30px;letter-spacing:.15em;color:var(--red-deep);margin-top:18px;text-shadow:1px 1px 0 rgba(0,0,0,.07)}
+  .welcome .bw span{color:var(--ink)}
+  .welcome .bt{font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:var(--ochre);margin-top:10px;font-weight:700}
+  .welcome.out{animation:welcomeOut .4s ease forwards}
+  @keyframes welcomeOut{to{opacity:0}}
+
+  /* home top row: brand left, handle right */
+  .hometop{display:flex;align-items:center;justify-content:space-between}
+  .handle{font-size:12px;font-weight:700;color:var(--red-deep);border:1.5px solid var(--line);border-radius:18px;padding:6px 11px;cursor:pointer;background:var(--cream-light);white-space:nowrap}
+  .handle .av{display:inline-block;width:16px;height:16px;border-radius:50%;background:var(--red);color:var(--cream-light);text-align:center;line-height:16px;font-size:9px;margin-right:5px;vertical-align:-3px}
+  .avatarbtn{width:34px;height:34px;border-radius:50%;background:var(--red);color:var(--cream-light);text-align:center;line-height:34px;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 2px 0 var(--red-deep)}
+  .streak{font-size:12px;font-weight:700;color:#2b2008;background:var(--ochre);border-radius:14px;padding:6px 10px;white-space:nowrap;cursor:default}
+  #bottomnav{display:flex;border-top:1px solid var(--line);background:var(--paper);z-index:3}
+  #bottomnav:empty{display:none}
+  .tabbtn{flex:1;text-align:center;font-size:8px;letter-spacing:.03em;color:#8a7a5c;padding:8px 2px 11px;cursor:pointer;text-transform:uppercase;font-weight:700}
+  .tabbtn.on{color:var(--red)}
+  .tabbtn .ti{font-size:17px;margin-bottom:3px}
+  /* wish list + detail */
+  .wlrow{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:13px;padding:12px 13px;margin-top:9px;background:var(--cream-light);cursor:pointer}
+  .wlrow:hover{border-color:var(--red)}
+  .wlrow .wt{flex:1;font-family:"Yeseva One",serif;font-size:15px;line-height:1.15;color:var(--ink)}
+  .lbl{font-size:9px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;border-radius:12px;padding:4px 8px;white-space:nowrap}
+  .lbl.prog{background:var(--paper-2);color:var(--red-deep);border:1px solid var(--line)}
+  .lbl.true{background:var(--ochre);color:#2b2008}
+  .actlist{margin-top:10px}
+  .actitem{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#4a3f33;padding:7px 0;border-top:1px dashed var(--line)}
+  .actitem:first-child{border-top:none}
+  .actitem .bx{flex:none;width:16px;height:16px;border:1.5px solid var(--red);border-radius:4px;margin-top:1px;text-align:center;line-height:14px;font-size:11px;color:var(--red)}
+  .actitem.done .bx{background:var(--red);color:var(--cream-light)}
+  .modchoice{border:1.5px solid var(--line);border-radius:13px;padding:13px;margin-top:10px;background:var(--cream-light);cursor:pointer}
+  .modchoice:hover{border-color:var(--red)}
+  .modchoice .t{font-family:"Anton",sans-serif;letter-spacing:.04em;text-transform:uppercase;font-size:13px;color:var(--ink)}
+  .modchoice p{font-size:11.5px;color:#6a5b45;margin-top:4px;line-height:1.35}
+
+  /* brand lockup / logo — compact horizontal */
+  .brandfoot{margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px;padding-bottom:4px}
+  .brandfoot .txt{display:flex;flex-direction:column;align-items:flex-start;line-height:1}
+  .brand-word{font-family:"Anton",sans-serif;font-size:15px;letter-spacing:.13em;color:var(--red-deep)}
+  .brand-word span{color:var(--ink)}
+  .brand-tag{font-size:7px;letter-spacing:.18em;text-transform:uppercase;color:var(--ochre);margin-top:3px;font-weight:700;white-space:nowrap}
+
+  /* blow animation */
+  .blowscreen{align-items:center;justify-content:center;text-align:center;flex:1;display:flex;flex-direction:column;position:relative;z-index:2;padding:20px}
+  .catkin{position:absolute;width:7px;height:11px;background:var(--cream-light);border-radius:50% 50% 50% 50%/60% 60% 40% 40%;box-shadow:0 0 0 1px rgba(0,0,0,.08);opacity:0;z-index:3;left:50%;top:48%}
+  @keyframes fly{0%{transform:translate(0,0) rotate(0);opacity:0}15%{opacity:1}100%{transform:translate(var(--dx),var(--dy)) rotate(var(--r));opacity:0}}
+  .blow-cap{font-family:"Yeseva One",serif;font-size:24px;color:var(--ink);margin-top:22px}
+  .blow-sub{font-size:12.5px;color:#7a6b53;margin-top:8px}
+
+  /* willow help result */
+  .rescard{background:var(--cream-light);border:1.5px solid var(--line);border-radius:14px;padding:13px 14px;margin-top:12px;box-shadow:0 3px 0 rgba(0,0,0,.05)}
+  .rescard .tag{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--red);font-weight:700}
+  .rescard h4{font-family:"Yeseva One",serif;font-size:16px;margin:5px 0;color:var(--ink);line-height:1.15}
+  .rescard p{font-size:12px;color:#5a4d3c;line-height:1.4}
+  .rescard a{color:var(--red-deep);font-weight:700;text-decoration:none;word-break:break-all}
+  .rescard .mini{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:#4a3f33;padding:7px 0;border-top:1px dashed var(--line)}
+  .rescard .mini:first-of-type{border-top:none}
+  .rescard .mini b{color:var(--ink)}
+  .pricebadge{display:inline-block;background:var(--ochre);color:#2b2008;border-radius:20px;padding:2px 9px;font-weight:700;font-size:11px;margin-top:4px}
+
+  .hint{color:#efe7d4;font-size:12px;margin-top:16px;text-align:center;max-width:330px;opacity:.8;line-height:1.5}
+  .restart{margin-top:10px;background:none;border:1px solid rgba(255,255,255,.3);color:#efe7d4;padding:7px 16px;border-radius:20px;font-size:12px;cursor:pointer}
+</style>
+</head>
+<body>
+  <div class="hero">
+    <div class="logo">WISH <span class="amp">·</span> WILLOW</div>
+    <div class="kicker">Interactive demo — pick a wish, walk the journey</div>
+  </div>
+
+  <div class="phone"><div class="notch"></div>
+    <div class="screen paper"><div class="vignette"></div>
+      <div class="statusbar"><span>9:41</span><span>●●● ▮</span></div>
+      <div id="chrome"></div>
+      <div class="body" id="screen"></div>
+      <div id="bottomnav"></div>
+    </div>
+  </div>
+  <div class="hint">Click through it like the real app — chips select, photos upload, the willow blows, and Willow adapts its help to your budget.</div>
+  <button class="restart" onclick="restart()">↺ Start over</button>
+
+<script>
+const PRICE_BASE = 1199;
+const HANDLE = 'jenny';
+let widc = 100;
+function newId(){ return 'w'+(++widc); }
+const state = {wish:null, steps:[], i:0, a:{}, view:null, detailId:null,
+  wishes:[
+    {id:'w1', text:'I have an iPhone 18 Pro', kind:'iphone', status:'prog',
+     acts:[['Entered the hackathon to win one',true],['Set up financing',false],['Reserve at Apple',false]]},
+    {id:'w2', text:'I have a girlfriend', kind:'girlfriend', status:'true',
+     acts:[['RSVP’d the Founders Mixer',true],['Willow briefed me on 3 matches',true],['Met someone great',true]]},
+  ]};
+
+function wishEmoji(k){ return ({girlfriend:'💛',boyfriend:'💙',iphone:'📱',hackathon:'📊',other:'🌟'})[k]||'🌟'; }
+function defaultActs(k){
+  if(k==='iphone') return [['Enter the hackathon to win one',false],['Reserve at Apple',false],['Set up financing',false]];
+  if(k==='girlfriend'||k==='boyfriend') return [['RSVP the next mixer',false],['Willow briefs you on 3 matches',false]];
+  if(k==='hackathon') return [['Willow pings you with updates',false]];
+  return [['Willow drafted a plan',false],['Take the first step today',false]];
+}
+function wishTitle(k){ return ({girlfriend:'I have a girlfriend',boyfriend:'I have a boyfriend',iphone:'I have an iPhone 18 Pro',hackathon:'YC hackathon status'})[k] || (state.a.customText||'My wish'); }
+
+/* notifications + DMs (demo seed) */
+state.notifs=[
+  {id:'n1', ic:'💬', text:'Amélie commented on "I have a girlfriend"', wishId:'w2', time:'2m'},
+  {id:'n2', ic:'💰', text:'+$25 crowdfunded toward your iPhone 18 Pro', wishId:'w1', time:'1h'},
+  {id:'n3', ic:'✅', text:'Your RSVP to the Founders Mixer was approved', wishId:'w2', time:'3h'},
+];
+state.dms=[
+  {id:'d1', who:'amelie', time:'2m', msgs:[['amelie','Hey! Saw your wish 💛'],['you','Thank you!! that’s so kind'],['amelie','Happy to help — when are you free?']]},
+  {id:'d2', who:'marcus', time:'1d', msgs:[['marcus','I can introduce you to someone great 🙂']]},
+];
+state.tab='notif'; state.dmId=null; state.streak=5;
+state.community=[
+  {text:'I wish someone would tell me what to wear in Paris next week', who:'lena', loc:'Paris', reward:20, replies:3, ic:'🧥'},
+  {text:'I have a girlfriend', who:'sam', loc:'San Francisco', reward:25, replies:5, ic:'💛'},
+  {text:'I wish I had a CS study buddy', who:'kai', loc:'Remote', reward:0, replies:2, ic:'📚'},
+];
+
+function openCommunity(){ state.view='community'; render(); }
+function bottomNav(){
+  const v=state.view, t=state.tab;
+  const show = (!state.wish && !v) || v==='menu' || v==='community' || v==='wishdetail';
+  if(!show) return '';
+  const tab=(label,ic,act,on)=>`<div class="tabbtn${on?' on':''}" onclick="${act}"><div class="ti">${ic}</div>${label}</div>`;
+  return tab('Notifications','🔔',"openMenu('notif')", v==='menu'&&t==='notif')
+       + tab('DMs','✉️',"openMenu('dms')", v==='menu'&&t==='dms')
+       + tab('Wishes','🌳',"openMenu('wishes')", v==='menu'&&t==='wishes')
+       + tab('Community','👥',"openCommunity()", v==='community');
+}
+function communityHTML(){
+  return `<div class="step">The grove — public wishes near you</div>
+    ${state.community.map(w=>`<div class="wlrow">
+      <span class="ic" style="font-size:20px">${w.ic}</span>
+      <span class="wt" style="font-size:14px">${w.text}<div style="font-size:11px;color:#7a6b53;font-family:'DM Sans';margin-top:2px">@${w.who} · 📍 ${w.loc} · 💬 ${w.replies}${w.reward?' · $'+w.reward:''}</div></span>
+      ${w.reward?`<span class="lbl true">$${w.reward}</span>`:'<span class="lbl prog">free</span>'}
+    </div>`).join('')}`;
+}
+
+/* profile menu navigation */
+function openMenu(tab){ state.view='menu'; state.tab=tab||'notif'; render(); }
+function switchTab(tab){ state.tab=tab; render(); }
+function openWishlist(){ openMenu('wishes'); }
+function openDetail(id){ state.view='wishdetail'; state.detailId=id; render(); }
+function openDM(id){ state.view='dm'; state.dmId=id; render(); }
+function sendDM(id){
+  const inp=document.getElementById('dminp'); const v=inp&&inp.value.trim(); if(!v) return;
+  const d=state.dms.find(x=>x.id===id); if(d){ d.msgs.push(['you',v]); } render();
+}
+function closeView(){ state.view=null; render(); }
+function modifyWish(id){
+  const w=state.wishes.find(x=>x.id===id); if(!w) return;
+  if(w.status==='true'){ state.view='modchoice'; state.detailId=id; render(); }
+  else startModify(id,'override');
+}
+function startModify(id, mode){
+  const w=state.wishes.find(x=>x.id===id); if(!w) return;
+  state.view=null; state.wish=w.kind; state.acted={};
+  state.a={ customText:w.text, _modify:true, _mode:mode, _origId:id };
+  state.steps=buildSteps(); state.i=0; render();
+}
+function regenFromModify(){
+  const a=state.a, txt=a.customText||'My wish';
+  if(a._mode==='new') state.wishes.unshift({id:newId(),text:txt,kind:state.wish,status:'prog',acts:defaultActs(state.wish)});
+  else if(a._origId){ const w=state.wishes.find(x=>x.id===a._origId); if(w){ w.text=txt; w.status='prog'; w.acts=defaultActs(state.wish); } }
+  next();
+}
+
+/* ---------- step builders ---------- */
+function buildSteps(){
+  const w = state.wish, a = state.a;
+  // Modify flow: WW already has essential info → skip clarification, just edit + regenerate.
+  if(a && a._modify){
+    const rt={iphone:'iphone-result',hackathon:'hackathon-result',girlfriend:'onit',boyfriend:'onit',other:'other-result'}[w]||'other-result';
+    return [{id:'modify', type:'modify'}, {id:'result', type:rt}];
+  }
+  if(w==='iphone'){
+    return [
+      {id:'config', type:'config'},
+      {id:'location', type:'location', q:'Where are you?', ph:'e.g. “San Francisco, happy to travel a bit”'},
+      {id:'budget', type:'budget'},
+      {id:'privacy', type:'privacy'},
+      {id:'blow', type:'blow'},
+      {id:'result', type:'iphone-result'},
+    ];
+  }
+  if(w==='hackathon'){
+    return [
+      {id:'track', type:'track'},
+      {id:'privacy', type:'privacy'},
+      {id:'blow', type:'blow'},
+      {id:'result', type:'hackathon-result'},
+    ];
+  }
+  if(w==='other'){
+    return [
+      {id:'detail', type:'textarea'},
+      {id:'budget', type:'budget'},
+      {id:'privacy', type:'privacy'},
+      {id:'blow', type:'blow'},
+      {id:'result', type:'other-result'},
+    ];
+  }
+  // girlfriend / boyfriend
+  const noun = w; // 'girlfriend' | 'boyfriend'
+  const steps = [{id:'locality', type:'locality', noun}];
+  steps.push({id:'photos', type:'photos'});
+  steps.push({id:'budget', type:'budget'});
+  steps.push({id:'extra', type:'textarea'});
+  steps.push({id:'privacy', type:'privacy'});
+  steps.push({id:'blow', type:'blow'});
+  steps.push({id:'onit', type:'onit'});
+  return steps;
+}
+function rebuild(){ const cur=state.steps[state.i]; state.steps=buildSteps();
+  // keep index pointing at same id if possible
+  const idx=state.steps.findIndex(s=>s.id===cur.id); if(idx>=0) state.i=idx; }
+
+/* ---------- navigation ---------- */
+function pick(w){ state.wish=w; state.a={}; state.acted={}; state.i=0; state.steps=buildSteps(); render(); }
+function startCustom(){
+  const inp=document.getElementById('wishinp');
+  const v=(inp && inp.value.trim()) ? inp.value.trim() : "";
+  state.wish='other'; state.a={ customText:v }; state.acted={}; state.i=0; state.steps=buildSteps(); render();
+}
+// Mark a solution action as taken (demo: flips the card to a confirmed next-state).
+function act(key){ state.acted = state.acted || {}; state.acted[key] = true; render(); }
+// Render either the action button (not yet taken) or the confirmed done line.
+function actionRow(key, label, doneText, ghost){
+  if ((state.acted||{})[key]) return `<div class="done">✓ ${doneText}</div>`;
+  return `<button class="actbtn${ghost?' ghost':''}" onclick="act('${key}')">${label}</button>`;
+}
+// Crowdfund panel: Willow-drafted campaign + a list of real crowdfunding sites.
+function crowdPanel(price, bud, c){
+  const gap = price - bud;
+  const model = c.model || 'Pro';
+  const title = `Help me get an iPhone 18 ${model}`;
+  const post = `I'm $${gap} short of an iPhone 18 ${model} (${c.storage||'256GB'}). Anything helps me get there — thank you! 🙏`;
+  const sites = [
+    ['GoFundMe','https://www.gofundme.com/start'],
+    ['Fundly','https://fundly.com'],
+    ['Chuffed','https://chuffed.org'],
+    ['GiveSendGo','https://www.givesendgo.com'],
+  ];
+  return `<div class="draftbox"><div class="draftlbl">Willow drafted this</div>
+    <div class="drafttitle">${title}</div><div class="draftpost">${post}</div></div>
+    <div class="sitelbl">Pick a crowdfunding site</div>
+    ${sites.map(s=>`<a class="actbtn ghost" href="${s[1]}" target="_blank">${s[0]} →</a>`).join('')}`;
+}
+// Financing panel: a list of legit pay-over-time options.
+function financePanel(mo){
+  const sites = [
+    ['Apple Card Monthly Installments','https://www.apple.com/apple-card/monthly-installments/'],
+    ['Affirm','https://www.affirm.com'],
+    ['Klarna','https://www.klarna.com'],
+    ['PayPal Pay Later','https://www.paypal.com/us/digital-wallet/pay-later'],
+  ];
+  return `<div class="sitelbl">Legit financing (~$${mo}/mo)</div>
+    ${sites.map(s=>`<a class="actbtn ghost" href="${s[1]}" target="_blank">${s[0]} →</a>`).join('')}`;
+}
+function next(){ if(state.i<state.steps.length-1){ state.i++; render(); } }
+function back(){ if(state.i>0){ state.i--; render(); } else { state.wish=null; render(); } }
+function restart(){ state.wish=null; state.a={}; state.i=0; render(); }
+
+/* ---------- answer helpers ---------- */
+function singlePick(el, key, val){
+  el.parentNode.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on'); state.a[key]=val;
+  if(key==='locality'){
+    const lb=document.getElementById('localbox');
+    if(lb){ lb.classList.toggle('hide', val!=='Local'); if(val==='Local'){ const i=document.getElementById('locinp'); if(i) i.focus(); } }
+  }
+}
+function multiPick(el, key, val){
+  state.a[key]=state.a[key]||[];
+  const i=state.a[key].indexOf(val);
+  if(i>=0){state.a[key].splice(i,1);el.classList.remove('on');}
+  else{state.a[key].push(val);el.classList.add('on');}
+}
+let locTimer=null;
+function scheduleLoc(val){
+  state.a.location=val;
+  if(locTimer) clearTimeout(locTimer);
+  const box=document.getElementById('locproc');
+  const v=(val||'').trim();
+  if(v.length>=3){ if(box){ box.classList.add('show'); box.innerHTML='Reading…'; } locTimer=setTimeout(processLoc, 600); }
+  else if(box){ box.classList.remove('show'); box.innerHTML=''; }
+}
+async function processLoc(){
+  const inp=document.getElementById('locinp'); const v=(inp?inp.value.trim():'')||'';
+  const box=document.getElementById('locproc'); box.classList.add('show');
+  if(!v){ box.innerHTML='Type a city or 5-digit ZIP.'; return; }
+  box.innerHTML='Reading…';
+  try{
+    let label='';
+    if(/^\d{5}$/.test(v)){
+      const r=await fetch('https://api.zippopotam.us/us/'+v);
+      if(r.ok){ const d=await r.json(); const p=d.places&&d.places[0];
+        if(p){ label=p['place name']+', '+p['state abbreviation']+' '+v; state.a.lat=+p.latitude; state.a.lng=+p.longitude; } }
+    } else {
+      const r=await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&language=en&name='+encodeURIComponent(v));
+      if(r.ok){ const d=await r.json(); const g=d.results&&d.results[0];
+        if(g){ label=[g.name,g.admin1,g.country_code].filter(Boolean).join(', '); state.a.lat=g.latitude; state.a.lng=g.longitude; } }
+    }
+    if(label){ state.a.location=label; box.innerHTML='Got it — <b>📍 '+label+'</b> · searching nearby.'; }
+    else { box.innerHTML='Hmm, couldn’t find that — try a city name or 5-digit ZIP.'; }
+  }catch(e){ box.innerHTML='Couldn’t reach the location service — check your connection.'; }
+}
+function previewPhotos(input){
+  const grid=document.getElementById('pgrid'); if(!grid) return;
+  const files=Array.from(input.files||[]);
+  state.a.photoCount=(state.a.photoCount||0);
+  files.forEach(f=>{
+    const url=URL.createObjectURL(f);
+    const d=document.createElement('div'); d.className='ptile';
+    d.innerHTML='<img src="'+url+'">';
+    grid.appendChild(d);
+    state.a.photoCount++;
+  });
+}
+function setReward(v){
+  state.a.reward=String(v);
+  const inp=document.getElementById('rewardinp'); if(inp) inp.value=v;
+  document.querySelectorAll('.rchip').forEach(c=>c.classList.toggle('on', c.dataset.v===String(v)));
+}
+function setPrivacy(el,val){
+  document.querySelectorAll('.opt').forEach(o=>o.classList.remove('on'));
+  el.classList.add('on'); state.a.privacy=val;
+  document.getElementById('rewardbox').classList.toggle('show', val==='Public');
+}
+function confirmCast(){ // jump to blow
+  const bi=state.steps.findIndex(s=>s.type==='blow'); if(bi>=0){state.i=bi;render();}
+}
+function iphonePrice(){
+  // Apple iPhone 18 Pro pricing (apple.com, Nov 2026)
+  const c=state.a.config||{};
+  const max = c.model==='Pro Max';
+  const tiers = max
+    ? {'256GB':1299,'512GB':1499,'1TB':1899,'2TB':2499}
+    : {'256GB':1199,'512GB':1399,'1TB':1799,'2TB':2399};
+  return tiers[c.storage] || (max?1299:1199);
+}
+function budgetNum(){ return parseInt(String(state.a.budget||'').replace(/[^0-9]/g,''))||0; }
+function timingHTML(){
+  if(!state.a.timeNum) state.a.timeNum='3';
+  if(!state.a.timeUnit) state.a.timeUnit='months';
+  const nums=Array.from({length:30},(_,i)=>i+1);
+  const units=['days','weeks','months','years'];
+  return `<div class="timing">
+    <select class="tsel" onchange="state.a.timeNum=this.value">${nums.map(n=>`<option ${String(n)===String(state.a.timeNum)?'selected':''}>${n}</option>`).join('')}</select>
+    <select class="tsel" onchange="state.a.timeUnit=this.value">${units.map(u=>`<option ${u===state.a.timeUnit?'selected':''}>${u}</option>`).join('')}</select>
+  </div>`;
+}
+
+/* ---------- chrome (top bar + dots) ---------- */
+function renderChrome(){
+  const c=document.getElementById('chrome');
+  if(!state.wish){ c.innerHTML=''; return; }
+  const s=state.steps[state.i];
+  const questionSteps=state.steps.filter(x=>!['blow','onit','iphone-result','hackathon-result','other-result'].includes(x.type));
+  let dots='';
+  if(!['blow','onit','iphone-result','hackathon-result','other-result'].includes(s.type)){
+    dots='<div class="dots">'+questionSteps.map((x,ix)=>'<span class="dot'+(state.steps[state.i].id===x.id?' on':'')+'"></span>').join('')+'</div>';
+  }
+  c.innerHTML='<div class="top"><button class="back" onclick="back()">‹</button><span class="mark">WISH<span class="s">·</span>WILLOW</span><span class="avatarbtn" style="position:absolute;right:14px;top:-4px;width:30px;height:30px;line-height:30px;font-size:13px" onclick="openMenu(\'notif\')">'+HANDLE[0].toUpperCase()+'</span></div>'+dots;
+}
+
+function renderViewChrome(title, onback){
+  document.getElementById('chrome').innerHTML =
+    `<div class="top"><button class="back" onclick="${onback}">‹</button><span class="mark">${title}</span></div>`;
+}
+const RESULTS=['onit','iphone-result','hackathon-result','other-result'];
+
+/* ---------- main render ---------- */
+function render(){
+  const el=document.getElementById('screen');
+  const bn=document.getElementById('bottomnav'); if(bn) bn.innerHTML=bottomNav();
+  if(state.view==='community'){ renderViewChrome('COMMUNITY', 'closeView()'); el.innerHTML=communityHTML(); return; }
+  if(state.view==='menu'){ renderViewChrome('@'+HANDLE, 'closeView()'); el.innerHTML=menuHTML(); return; }
+  if(state.view==='wishdetail'){ renderViewChrome('WISH', 'openMenu(\'wishes\')'); el.innerHTML=wishDetailHTML(); return; }
+  if(state.view==='modchoice'){ renderViewChrome('MODIFY', 'openMenu(\'wishes\')'); el.innerHTML=wishChoiceHTML(); return; }
+  if(state.view==='dm'){ const d=state.dms.find(x=>x.id===state.dmId); renderViewChrome('@'+(d?d.who:'dm'), 'openMenu(\'dms\')'); el.innerHTML=dmHTML(); return; }
+  renderChrome();
+  if(!state.wish){ el.innerHTML = introHTML(); return; }
+  const s=state.steps[state.i];
+  // record a newly-cast wish into the wish list (not for modify flows)
+  if(RESULTS.includes(s.type) && state.a && !state.a._recorded && !state.a._modify){
+    state.a._recorded=true;
+    state.wishes.unshift({id:newId(), text:wishTitle(state.wish), kind:state.wish, status:'prog', acts:defaultActs(state.wish)});
+  }
+  el.innerHTML = STEP[s.type](s);
+  if(s.type==='blow'){ setTimeout(()=>{ const b=document.getElementById('blownext'); if(b) b.style.opacity=1; }, 1800); }
+}
+
+/* ---------- profile views ---------- */
+function menuHTML(){
+  const tab=state.tab||'notif';
+  const tabs=`<div class="chips" style="margin-top:2px">
+    <span class="chip${tab==='notif'?' on':''}" onclick="switchTab('notif')">🔔 Notifications</span>
+    <span class="chip${tab==='wishes'?' on':''}" onclick="switchTab('wishes')">🌳 Wishes</span>
+    <span class="chip${tab==='dms'?' on':''}" onclick="switchTab('dms')">✉️ DMs</span>
+  </div>`;
+  let body='';
+  if(tab==='notif'){
+    body = state.notifs.map(n=>`<div class="wlrow" onclick="${n.wishId?`openDetail('${n.wishId}')`:''}">
+      <span class="ic" style="font-size:19px">${n.ic}</span><span class="wt" style="font-size:13.5px;font-family:'DM Sans'">${n.text}</span>
+      <span class="lbl prog">${n.time}</span></div>`).join('');
+  } else if(tab==='wishes'){
+    body = state.wishes.map(w=>`<div class="wlrow" onclick="openDetail('${w.id}')">
+      <span class="ic" style="font-size:20px">${wishEmoji(w.kind)}</span><span class="wt">${w.text}</span>
+      <span class="lbl ${w.status==='true'?'true':'prog'}">${w.status==='true'?'✓ true':'in progress'}</span></div>`).join('');
+  } else {
+    body = state.dms.map(d=>`<div class="wlrow" onclick="openDM('${d.id}')">
+      <span style="flex:none;width:30px;height:30px;border-radius:50%;background:var(--red);color:var(--cream-light);text-align:center;line-height:30px;font-weight:700;font-size:13px">${d.who[0].toUpperCase()}</span>
+      <span class="wt" style="font-size:14px">@${d.who}<div style="font-size:11.5px;color:#7a6b53;font-family:'DM Sans'">${d.msgs[d.msgs.length-1][1]}</div></span>
+      <span class="lbl prog">${d.time}</span></div>`).join('');
+  }
+  return `${tabs}<div style="margin-top:6px">${body}</div>`;
+}
+function dmHTML(){
+  const d=state.dms.find(x=>x.id===state.dmId); if(!d) return 'Not found';
+  const bubbles=d.msgs.map(m=>`<div class="bubble" style="max-width:80%;margin:8px 0;${m[0]==='you'?'margin-left:auto;background:var(--red);color:var(--cream-light);border-radius:14px 14px 4px 14px':'border-radius:14px 14px 14px 4px'}">${m[1]}</div>`).join('');
+  return `<div style="flex:1;overflow-y:auto">${bubbles}</div>
+    <div class="input"><input id="dminp" class="ph" placeholder="message @${d.who}…" onkeydown="if(event.key==='Enter')sendDM('${d.id}')"><span class="mic" onclick="sendDM('${d.id}')">➤</span></div>`;
+}
+function wishDetailHTML(){
+  const w=state.wishes.find(x=>x.id===state.detailId); if(!w) return 'Not found';
+  return `<div class="step">${w.status==='true'?'✓ came true':'in progress'}</div>
+    <div class="q" style="font-size:22px">${w.text}</div>
+    <span class="lbl ${w.status==='true'?'true':'prog'}" style="display:inline-block;margin-top:9px">${w.status==='true'?'✓ true':'in progress'}</span>
+    <div class="group-label" style="margin-top:16px">Action list</div>
+    <div class="actlist">${(w.acts||[]).map(a=>`<div class="actitem ${a[1]?'done':''}"><span class="bx">${a[1]?'✓':''}</span><span>${a[0]}</span></div>`).join('')}</div>
+    <div style="flex:1;min-height:12px"></div>
+    <button class="cta" onclick="modifyWish('${w.id}')">✏️ Modify this wish</button>`;
+}
+function wishChoiceHTML(){
+  const w=state.wishes.find(x=>x.id===state.detailId); if(!w) return 'Not found';
+  return `<div class="step">This wish came true 🎉</div>
+    <div class="q" style="font-size:20px">Modify “${w.text}” —</div>
+    <div class="modchoice" onclick="startModify('${w.id}','new')"><div class="t">✨ Make it a new wish</div><p>Keep this one as reality; start a fresh wish with new action items.</p></div>
+    <div class="modchoice" onclick="startModify('${w.id}','override')"><div class="t">✏️ Override this wish</div><p>Replace it — reopen with updated details &amp; a new action list.</p></div>`;
+}
+
+/* ---------- screens ---------- */
+const LOGO_BIG = `
+<svg width="104" height="104" viewBox="0 0 70 70" aria-label="Wish Willow logo">
+  <circle cx="35" cy="35" r="32" fill="#F4ECD8" stroke="#B23A2C" stroke-width="2.5"/>
+  <circle cx="35" cy="35" r="27" fill="none" stroke="#B23A2C" stroke-width="1" stroke-dasharray="1.2 3.2" opacity=".85"/>
+  <g transform="translate(26,14) scale(0.95)">
+    <path d="M9 39 C6 33 11 30 8 24 C5 19 12 16 8 11 C5 7 10 5 9 1 C12 5 8 8 11 13 C14 18 7 21 11 26 C14 31 8 34 9 39Z" fill="#241C16"/>
+    <ellipse cx="9" cy="10" rx="1.5" ry="3" fill="#F4ECD8"/>
+    <ellipse cx="9" cy="20" rx="1.6" ry="3.3" fill="#F4ECD8"/>
+    <ellipse cx="9" cy="29" rx="1.3" ry="2.5" fill="#F4ECD8"/>
+  </g>
+  <g fill="#B23A2C">
+    <path d="M14 20l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9z"/>
+    <path d="M55 44l.8 2.3 2.3.8-2.3.8-.8 2.3-.8-2.3-2.3-.8 2.3-.8z"/>
+    <circle cx="54" cy="20" r="1.5"/>
+    <circle cx="15" cy="49" r="1.3"/>
+  </g>
+</svg>`;
+
+let welcomeTimer=null;
+function showWelcome(){
+  document.getElementById('chrome').innerHTML='';
+  const bn=document.getElementById('bottomnav'); if(bn) bn.innerHTML='';
+  const el=document.getElementById('screen');
+  el.innerHTML=`<div class="welcome" onclick="skipWelcome()">${LOGO_BIG}
+    <div class="bw">WISH <span>·</span> WILLOW</div>
+    <div class="bt">★ wishes do come true ★</div>
+  </div>`;
+  welcomeTimer=setTimeout(endWelcome, 2000);
+}
+function skipWelcome(){ if(welcomeTimer){clearTimeout(welcomeTimer);welcomeTimer=null;} endWelcome(); }
+function endWelcome(){
+  const w=document.querySelector('.welcome');
+  if(w){ w.classList.add('out'); setTimeout(render, 380); } else { render(); }
+}
+
+function introHTML(){
+  return `
+  <div class="hometop" style="margin-top:6px">
+    <div class="brandfoot" style="margin:0;gap:10px">${LOGO.replace('width="30" height="30"','width="46" height="46"')}
+      <div class="txt">
+        <div class="brand-word" style="font-size:19px">WISH <span>·</span> WILLOW</div>
+        <div class="brand-tag">★ wishes do come true ★</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="streak" title="Daily wish-check streak — keep it alive!">🔥 ${state.streak}</div>
+      <div class="avatarbtn" onclick="openMenu('notif')">${HANDLE[0].toUpperCase()}</div>
+    </div>
+  </div>
+  <div class="q big" style="margin-top:10px;font-size:34px;text-align:left">I&nbsp;Wish</div>
+  <div class="starline" style="margin:7px 0 2px;text-align:left">✦ ✦ ✦</div>
+  <div class="wishcard" onclick="pick('girlfriend')"><span class="ic">💛</span><div class="t">I have a girlfriend</div></div>
+  <div class="wishcard" onclick="pick('boyfriend')"><span class="ic">💙</span><div class="t">I have a boyfriend</div></div>
+  <div class="wishcard" onclick="pick('iphone')"><span class="ic">📱</span><div class="t">I have an iPhone 18 Pro</div></div>
+  <div class="wishcard" onclick="pick('hackathon')"><span class="ic">📊</span><div class="t">I can see how the YC Consumer Mobile Hackathon’s going</div></div>
+  <div style="flex:1;min-height:4px"></div>
+  <div style="text-align:center;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#9a8a68;margin-bottom:6px">speak or type your own wish</div>
+  <div class="input" style="margin-top:0"><input id="wishinp" class="ph" placeholder="I wish…" onkeydown="if(event.key==='Enter')startCustom()"><span class="mic" onclick="startCustom()">🎙</span></div>`;
+}
+
+const LOGO = `
+<svg width="30" height="30" viewBox="0 0 70 70" aria-label="Wish Willow logo" style="flex:none">
+  <circle cx="35" cy="35" r="32" fill="#F4ECD8" stroke="#B23A2C" stroke-width="3"/>
+  <g transform="translate(26,14) scale(0.95)">
+    <path d="M9 39 C6 33 11 30 8 24 C5 19 12 16 8 11 C5 7 10 5 9 1 C12 5 8 8 11 13 C14 18 7 21 11 26 C14 31 8 34 9 39Z" fill="#241C16"/>
+    <ellipse cx="9" cy="10" rx="1.5" ry="3" fill="#F4ECD8"/>
+    <ellipse cx="9" cy="20" rx="1.6" ry="3.3" fill="#F4ECD8"/>
+    <ellipse cx="9" cy="29" rx="1.3" ry="2.5" fill="#F4ECD8"/>
+  </g>
+</svg>`;
+
+const STEP = {
+  locality: (s)=>`
+    <div class="step">Willow asks</div>
+    <div class="q">Local, or is remote fine?</div>
+    <div class="sub">For your ${s.noun} — someone nearby, or anywhere?</div>
+    <div class="chips">
+      <span class="chip${state.a.locality==='Local'?' on':''}" onclick="singlePick(this,'locality','Local')">Local — nearby</span>
+      <span class="chip${state.a.locality==='Remote'?' on':''}" onclick="singlePick(this,'locality','Remote')">Remote is fine</span>
+    </div>
+    <div id="localbox" class="${state.a.locality==='Local'?'':'hide'}">
+      <div class="input"><input id="locinp" class="ph" placeholder="city or ZIP" value="${state.a.location||''}" oninput="scheduleLoc(this.value)"><span class="mic" onclick="processLoc()">🎙</span></div>
+      <div class="processed" id="locproc"></div>
+    </div>
+    <div style="flex:1"></div>
+    <button class="cta" onclick="next()">Next</button>`,
+
+  location: (s)=>`
+    <div class="step">Willow asks</div>
+    <div class="q">${s.q}</div>
+    <div class="input"><input id="locinp" class="ph" placeholder="${s.ph}" value="${state.a.location||''}" oninput="scheduleLoc(this.value)"><span class="mic" onclick="processLoc()">🎙</span></div>
+    <div class="processed" id="locproc"></div>
+    <div style="flex:1"></div>
+    <button class="cta" onclick="next()">Next</button>`,
+
+  photos: ()=>`
+    <div class="step">Willow asks</div>
+    <div class="q">Show me your type</div>
+    <div class="sub">Upload a few photos of the kind of person you're drawn to — pick several at once.</div>
+    <label class="addphotos">＋ Add photos<input type="file" accept="image/*" multiple onchange="previewPhotos(this)"></label>
+    <div class="photos" id="pgrid"></div>
+    <div class="input"><input class="ph" placeholder="anything specific? (voice ok)"><span class="mic">🎙</span></div>
+    <div style="flex:1"></div>
+    <button class="cta" onclick="next()">Next</button>`,
+
+  budget: ()=>{
+    const isPhone = state.wish==='iphone';
+    return `
+    <div class="step">Willow asks</div>
+    <div class="q">${isPhone?'Budget &amp; timing?':'Any budget or timing?'}</div>
+    <div class="sub">${isPhone?'What can you spend, and by when?':'Willow stays within whatever you set.'}</div>
+    <div class="input" style="margin-top:18px"><span style="font-family:Anton;color:var(--red);font-size:20px">$</span><input id="budgetinp" class="ph" inputmode="numeric" placeholder="${isPhone?'900':'80'}" value="${state.a.budget||''}" oninput="state.a.budget=this.value"><span class="reward .u" style="font-size:11px;color:#9a8a68">${isPhone?'budget':'per step'}</span></div>
+    <div class="group-label">By when?</div>
+    ${timingHTML()}
+    <div style="flex:1"></div>
+    <button class="cta" onclick="next()">Next</button>`;
+  },
+
+  textarea: ()=>`
+    <div class="step">One more thing</div>
+    <div class="q">Anything else I should know?</div>
+    <div class="input" style="margin-top:20px;align-items:flex-start"><textarea class="ph" placeholder="speak freely — the more I know you, the better I help…"></textarea><span class="mic">🎙</span></div>
+    <div style="flex:1"></div>
+    <button class="cta" onclick="next()">Next</button>`,
+
+  config: ()=>{
+    const c=state.a.config||{}; state.a.config=c;
+    const grp=(label,key,vals)=>`<div class="group-label">${label}</div><div class="chips">${vals.map(v=>`<span class="chip${c[key]===v?' on':''}" onclick="(state.a.config['${key}']='${v}');this.parentNode.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));this.classList.add('on')">${v}</span>`).join('')}</div>`;
+    // iPhone 18 Pro finishes (approx. swatches from Apple's named finishes)
+    const FINISH={Silver:'#DCDEE1',Black:'#2A2A2C',Glacier:'#C9DCE6',Burgundy:'#5E2733'};
+    const finishGrp=`<div class="group-label">Finish</div><div class="chips">${Object.keys(FINISH).map(v=>`<span class="chip${c.finish===v?' on':''}" onclick="(state.a.config['finish']='${v}');this.parentNode.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));this.classList.add('on')"><span class="sw" style="background:${FINISH[v]}"></span>${v}</span>`).join('')}</div>`;
+    return `
+    <div class="step">Willow asks</div>
+    <div class="q">Which configuration?</div>
+    ${grp('Model','model',['Pro','Pro Max'])}
+    <div class="sub" style="margin-top:4px">Pro is 6.3″ · Pro Max is 6.9″</div>
+    ${finishGrp}
+    ${grp('Storage','storage',['256GB','512GB','1TB','2TB'])}
+    <div style="flex:1"></div>
+    <button class="cta" onclick="next()">Next</button>`;
+  },
+
+  track: ()=>`
+    <div class="step">Willow asks</div>
+    <div class="q">What do you want to know?</div>
+    <div class="chips">
+      ${['Who’s winning','Timeline','Prizes + sponsors','The buzz'].map(v=>`<span class="chip${(state.a.track||[]).includes(v)?' on':''}" onclick="multiPick(this,'track','${v}')">${v}</span>`).join('')}
+    </div>
+    <div class="input"><input class="ph" placeholder="anything specific? (voice ok)"><span class="mic">🎙</span></div>
+    <div style="flex:1"></div>
+    <button class="cta" onclick="next()">Next</button>`,
+
+  'hackathon-result': ()=>`
+    <div class="step">★ Willow’s watching it for you</div>
+    <div class="q" style="font-size:20px">The Consumer Mobile Hackathon</div>
+    <div class="sub">Sun · Nov 15, 2026 · YC, San Francisco</div>
+    <div class="rescard"><div class="tag">The challenge</div><h4>Build an app in one day</h4><p>iOS or Android — demoed live on a phone tonight. Submit by 6:30 PM.</p></div>
+    <div class="rescard"><div class="tag">Prizes</div><h4>1st: a YC interview + iPhone 18 Pro (each)</h4><p>2nd: MacBook Neo for every team member · 3rd: Apple Watch for every team member.</p></div>
+    <div class="rescard"><div class="tag">Eligibility</div><h4>Must use Capy · Revyl · Convex</h4><p>Every project must use all three — projects without all three aren't eligible for prizes. Co-hosted with Candle.</p></div>
+    <div class="rescard"><div class="tag">Sponsors</div><h4>Whop · Supermemory · Keiki · OpenAI</h4><p>Payments &amp; paywalls, AI memory, text-based apps, + $100 OpenAI credits.</p></div>
+    <div class="rescard"><div class="tag">Event</div><h4>RSVP &amp; submit</h4><p>Get on the list and submit by 6:30 PM.</p>
+      <a class="actbtn" href="https://events.ycombinator.com/ConsumerMobileHack#rsvp" target="_blank">RSVP to the hackathon →</a></div>
+    <div class="rescard"><div class="tag">Daily</div><h4>Willow pings you with updates</h4><p>${state.a.privacy==='Public'?'Shared digest — your circle can follow along too.':'Private digest, just for you.'}</p>
+      ${actionRow('track','Turn on updates','Updates on — I’ll ping you',true)}</div>
+    <button class="cta" onclick="restart()">↺ Make another wish</button>`,
+
+  modify: ()=>`
+    <div class="step">Modify your wish</div>
+    <div class="q">Tweak it — I kept what I know.</div>
+    <div class="input" style="margin-top:16px"><input class="ph" value="${state.a.customText||''}" oninput="state.a.customText=this.value"><span class="mic">🎙</span></div>
+    <div class="sub" style="margin-top:10px">No need to re-answer my questions — I already have your details${state.a.location?' ('+state.a.location+')':''}.</div>
+    <div style="flex:1"></div>
+    <button class="cta" onclick="regenFromModify()">Regenerate action list →</button>`,
+
+  'other-result': ()=>`
+    <div class="step">★ Willow did the legwork</div>
+    <div class="q" style="font-size:20px">On it — ${state.a.customText ? '“'+state.a.customText+'”' : 'your wish'}</div>
+    <div class="rescard"><div class="tag">Willow's plan</div><h4>I researched real options</h4><p>I pulled a first plan together within your budget &amp; timeline, and I'll check in daily until it's real.</p>
+      ${actionRow('plan','Start the plan','Plan started — first step today')}</div>
+    ${state.a.privacy==='Public' ? `<div class="rescard"><div class="tag">Community${state.a.reward?' · $'+state.a.reward+' reward':''}</div><h4>Post to the grove</h4><p>People can help — reward releases when you pick one (charge-on-select via Whop).</p>
+      ${actionRow('share','Post to the grove','Posted — helpers notified')}</div>` : ''}
+    ${actionRow('real','Mark it reality 🌳','Marked as reality 🌳 — your willow bloomed',true)}
+    <button class="cta" onclick="restart()">↺ Make another wish</button>`,
+
+  privacy: ()=>`
+    <div class="q" style="font-size:23px">Who keeps this wish?</div>
+    <div class="opt${state.a.privacy==='Private'?' on':''}" onclick="setPrivacy(this,'Private')">
+      <div class="t">🔒 Private</div>
+      <p>Just you &amp; Willow. Willow works on it quietly.</p>
+    </div>
+    <div class="opt${state.a.privacy==='Public'?' on':''}" onclick="setPrivacy(this,'Public')">
+      <div class="t">🌍 Public</div>
+      <p>You, Willow &amp; the community — others can help, and you reward whoever does.</p>
+      <div class="reward${state.a.privacy==='Public'?' show':''}" id="rewardbox">
+        <div class="rewardpicks">
+          ${[0,25,50,100].map(v=>`<span class="rchip${String(state.a.reward)===String(v)?' on':''}" data-v="${v}" onclick="setReward(${v})">$${v}</span>`).join('')}
+        </div>
+        <div class="rewardinput"><span class="dollar">$</span><input id="rewardinp" inputmode="numeric" placeholder="price it" value="${state.a.reward||''}" oninput="state.a.reward=this.value;document.querySelectorAll('.rchip').forEach(c=>c.classList.remove('on'))"><span class="u">reward</span></div>
+      </div>
+    </div>
+    <button class="cta" onclick="confirmCast()">Confirm &amp; cast</button>`,
+
+  blow: ()=>{
+    const ck=[[-70,-120,220,0],[60,-150,-180,.2],[-110,-60,160,.4],[120,-80,-200,.6],[-40,-180,120,.8],[90,-130,-140,1],[-130,-110,200,1.2],[40,-170,90,1.4]];
+    return `<div class="blowscreen">
+      ${ck.map(c=>`<div class="catkin" style="--dx:${c[0]}px;--dy:${c[1]}px;--r:${c[2]}deg;animation:fly 2.6s ease-out ${c[3]}s infinite"></div>`).join('')}
+      <svg width="58" height="112" viewBox="0 0 18 40" style="z-index:2"><path d="M9 39 C6 33 11 30 8 24 C5 19 12 16 8 11 C5 7 10 5 9 1 C12 5 8 8 11 13 C14 18 7 21 11 26 C14 31 8 34 9 39Z" fill="#241C16"/></svg>
+      <div class="blow-cap">Wish cast 🌬</div>
+      <div class="blow-sub">${state.a.privacy==='Public'?'Posted to the grove. Willow’s on it.':'Willow’s on it.'}</div>
+      <button class="cta" id="blownext" style="opacity:0;transition:.5s;max-width:220px;margin-top:24px" onclick="next()">See what Willow found</button>
+    </div>`;
+  },
+
+  onit: ()=>{
+    const reward = state.a.reward || '25';
+    return `
+    <div class="step">★ Willow did the legwork</div>
+    <div class="q" style="font-size:22px">Here's where your person is${state.a.locality==='Local'?' tonight':''}.</div>
+    <div class="rescard"><div class="tag">Event · tonight</div><h4>Creative Founders Mixer</h4><p>12 people match your type${state.a.location?' · '+state.a.location:''}. I can RSVP you &amp; brief you on 3 to talk to.</p>
+      ${actionRow('rsvp','RSVP me + brief me','RSVP’d — 3 intros queued for tonight')}</div>
+    <div class="rescard"><div class="tag">Daily</div><h4>Willow checks in &amp; adapts</h4><p>Every day a real next step, learning what you like.</p>
+      ${actionRow('daily','Turn on daily check-ins','Daily check-ins on',true)}</div>
+    ${state.a.privacy==='Public' ? `<div class="rescard"><div class="tag">Community · $${reward} reward</div><h4>3 matchmakers offered to help</h4><p>Reward releases when you pick one — charged on select via Whop.</p>
+      ${actionRow('pick','Pick a matchmaker &amp; release reward','Picked Amélie — $'+reward+' released via Whop')}</div>` : ''}
+    <button class="cta" onclick="restart()">↺ Make another wish</button>`;
+  },
+
+  'iphone-result': ()=>{
+    const price=iphonePrice(), bud=budgetNum(), fits=bud>=price, mo=Math.round(price/24);
+    const c=state.a.config||{};
+    const a=state.acted||{};
+    let help='';
+    help += `<div class="rescard"><div class="tag">Willow found an angle</div><h4>Win it by building — today</h4><p>1st place at the Consumer Mobile Hackathon (today, YC SF) is a YC interview <b>+ an iPhone 18 Pro for every team member</b>. Ship an app by 6:30 PM.</p>
+      <a class="actbtn" href="https://events.ycombinator.com/ConsumerMobileHack#rsvp" target="_blank">RSVP to the hackathon →</a></div>`;
+    if(fits){
+      help += `<div class="rescard"><div class="tag">Your budget fits — buy now</div><h4>iPhone 18 ${c.model||'Pro'} · ${c.storage||'256GB'}</h4>
+        <div class="mini"><span>Apple Store · ${c.finish||'Black'}</span><b>$${price}</b></div>
+        <div class="mini"><span>Carrier deal (trade-in)</span><b>-$200</b></div>
+        <div class="mini"><span>Certified refurbished</span><b>$${price-150}</b></div>
+        ${actionRow('buy','Reserve at Apple — $'+price,'Reserved at Apple — pickup today')}</div>`;
+    } else {
+      const gap=price-bud;
+      help += `<div class="rescard"><div class="tag">You're $${gap} short — here are your paths</div><h4>Crowdfund it</h4><p>Friends &amp; community chip in toward your iPhone. ($${bud} of $${price} so far.)</p>
+        ${a.crowd ? crowdPanel(price,bud,c) : `<button class="actbtn" onclick="act('crowd')">Draft my campaign + pick a site</button>`}</div>`;
+      help += `<div class="rescard"><div class="tag">Financing</div><h4>~$${mo}/mo over 24 months</h4><p>Pay over time — fits a $${bud} budget today.</p>
+        ${a.finance ? financePanel(mo) : `<button class="actbtn ghost" onclick="act('finance')">Show financing options</button>`}</div>`;
+    }
+    return `
+    <div class="step">★ Willow's on it</div>
+    <div class="q" style="font-size:21px">iPhone 18 ${c.model||'Pro'}${c.storage?' · '+c.storage:''}</div>
+    <div class="sub">Market ~<span class="pricebadge">$${price}</span> · your budget <b>$${bud||'—'}</b></div>
+    ${help}
+    <button class="cta" onclick="restart()">↺ Make another wish</button>`;
+  },
+};
+
+showWelcome();
+</script>
+</body>
+</html>
