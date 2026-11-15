@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
+import { AppState } from "react-native";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 
@@ -11,7 +12,8 @@ function dayKey(date: Date) {
 }
 
 /**
- * Consecutive days this device has opened Willow to check on its wishes. Once
+ * Consecutive days this device has opened Willow to check on its wishes,
+ * recounted on launch and whenever the app returns to the foreground. Once
  * the user is known, the check-in is mirrored to Convex so the daily nudge
  * skips users who already checked in and can quote their streak.
  */
@@ -20,7 +22,7 @@ export function useStreak(userId: Id<"users"> | undefined) {
   const checkIn = useMutation(api.nudge.checkIn);
 
   useEffect(() => {
-    AsyncStorage.getItem(KEY).then(async (raw) => {
+    const record = () => AsyncStorage.getItem(KEY).then(async (raw) => {
       const now = new Date();
       const today = dayKey(now);
       const yesterday = dayKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
@@ -31,6 +33,11 @@ export function useStreak(userId: Id<"users"> | undefined) {
       setStreak(count);
       if (userId) await checkIn({ userId, streak: count });
     });
+    record();
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") record();
+    });
+    return () => sub.remove();
   }, [userId, checkIn]);
 
   return streak;
