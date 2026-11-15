@@ -1,6 +1,6 @@
 import { useAction, useMutation } from "convex/react";
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -15,6 +15,14 @@ export default function Intake() {
   const [loadFailed, setLoadFailed] = useState(false);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const mounted = useRef(true);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const loadQuestions = useCallback(() => {
     generateQuestions({ wishId })
@@ -28,8 +36,9 @@ export default function Intake() {
   useEffect(loadQuestions, [loadQuestions]);
 
   const finish = async (intake: Record<string, string>) => {
+    if (!mounted.current) return;
     await completeIntake({ wishId, intake });
-    router.replace("/suggestions");
+    if (mounted.current) router.replace("/suggestions");
   };
 
   if (loadFailed) {
