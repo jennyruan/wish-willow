@@ -35,7 +35,8 @@
         {
           "photosPermission": "Wish Willow uses your photos so Willow can see the kind of person you are drawn to."
         }
-      ]
+      ],
+      "expo-video"
     ]
   }
 }

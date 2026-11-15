@@ -1,6 +1,7 @@
 import { usePaginatedQuery, useQuery } from "convex/react";
 import { ActivityIndicator, FlatList, View } from "react-native";
 import { api } from "../../convex/_generated/api";
+import type { Id } from "../../convex/_generated/dataModel";
 import { TopBar } from "../components/Chrome";
 import { Kicker, Pill, Question, T } from "../components/ui";
 import { colors, useScale } from "../theme";
@@ -8,7 +9,7 @@ import { WISH_EMOJI } from "../wishKinds";
 import { Empty, Row } from "./MenuScreen";
 
 /** The grove: everyone's public wishes, newest first, live. */
-export function CommunityScreen({ onBack }: { onBack: () => void }) {
+export function CommunityScreen({ onBack, onOpenWish }: { onBack: () => void; onOpenWish: (wishId: Id<"wishes">) => void }) {
   const { s } = useScale();
   const { results, status, loadMore } = usePaginatedQuery(api.wishes.listPublic, {}, { initialNumItems: 20 });
   const ownerIds = [...new Set(results.map((w) => w.ownerId))];
@@ -38,12 +39,12 @@ export function CommunityScreen({ onBack }: { onBack: () => void }) {
             .filter(Boolean)
             .join(" · ");
           return (
-            <Row icon={WISH_EMOJI[w.kind]}>
+            <Row icon={WISH_EMOJI[w.kind]} onPress={() => onOpenWish(w._id)}>
               <View style={{ flex: 1 }}>
                 <Question size={14}>{w.text}</Question>
                 {meta ? <T style={{ fontSize: 11 * s, color: colors.muted, marginTop: 2 * s }}>{meta}</T> : null}
               </View>
-              {w.reward ? <Pill tone="true" text={`$${w.reward}`} /> : <Pill tone="prog" text="free" />}
+              {w.realized ? <Pill tone="true" text="✓ came true" /> : w.reward ? <Pill tone="true" text={`$${w.reward}`} /> : <Pill tone="prog" text="free" />}
             </Row>
           );
         }}
