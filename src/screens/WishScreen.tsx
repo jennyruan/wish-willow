@@ -62,6 +62,8 @@ export function WishScreen({ me, wishId, onBack, onMessage }: { me: Me; wishId: 
 
         {isOwner ? <RealityControl wish={wish} me={me} /> : owner && <CtaButton label={`✉️ Message @${owner.handle}`} onPress={() => onMessage(wish.ownerId)} />}
 
+        {isPublic && <Payouts wish={wish} me={me} />}
+
         {isPublic && !isOwner && <ChipIn wish={wish} me={me} />}
 
         {isPublic ? (
@@ -155,7 +157,7 @@ function CommentRow({ c, depth, me, wish, canRemove, onReply, onMessage }: { c: 
   const [picking, setPicking] = useState<"idle" | "confirm" | "busy">("idle");
   const [payError, setPayError] = useState<string | null>(null);
   const mine = c.authorId === me._id;
-  const canPick = canRemove && wish.rewardReleasedAt === undefined && c.authorId !== wish.ownerId;
+  const canPick = canRemove && wish.helperId === undefined && c.authorId !== wish.ownerId;
   const pick = async () => {
     setPicking("busy");
     setPayError(null);
@@ -184,7 +186,7 @@ function CommentRow({ c, depth, me, wish, canRemove, onReply, onMessage }: { c: 
           </T>
         </Pressable>
         {c.kind === "match" && <Pill tone="true" text="match" />}
-        {wish.helperId === c.authorId && c.authorId !== wish.ownerId && <Pill tone="true" text={wish.reward ? "paid ✓" : "helper ✓"} />}
+        {wish.helperId === c.authorId && c.authorId !== wish.ownerId && <Pill tone={wish.rewardReleasedAt === undefined ? "prog" : "true"} text={wish.rewardReleasedAt === undefined ? "paid · sending" : wish.reward ? "paid ✓" : "helper ✓"} />}
       </View>
       {c.body ? <T style={{ fontSize: 13.5 * s, lineHeight: 13.5 * s * 1.4, color: colors.note, marginTop: 6 * s }}>{c.body}</T> : null}
       {c.mediaUrl && (c.kind === "photo" || c.kind === "video") && (
@@ -286,4 +288,27 @@ function ChipIn({ wish, me }: { wish: Doc<"wishes">; me: Me }) {
       {error && <T style={{ fontSize: 11.5 * s, color: colors.redDeep, marginTop: 6 * s }}>{error}</T>}
     </>
   );
+}
+
+/** Whop payouts on this wish: the recipient claims theirs, the wisher sees progress and retries a failed one. */
+function Payouts({ wish, me }: { wish: Doc<"wishes">; me: Me }) {
+  const { s } = useScale();
+  const payouts = useQuery(api.whop.payoutsForWish, { wishId: wish._id, userId: me._id });
+  const retry = useMutation(api.whop.retryPayout);
+  if (!payouts?.length) return null;
+  return payouts.map((p) => {
+    const what = p.kind === "reward" ? "reward" : "contribution";
+    if (p.claimUrl) {
+      return <CtaButton key={p.paymentId} label={`Claim your $${p.amount} ${what}`} onPress={() => WebBrowser.openBrowserAsync(p.claimUrl!)} />;
+    }
+    if (p.payout === "failed" && wish.ownerId === me._id) {
+      return <CtaButton key={p.paymentId} label={`Retry sending $${p.amount} ${what}`} onPress={() => retry({ paymentId: p.paymentId, userId: me._id })} />;
+    }
+    if (p.payout === "sent") return null;
+    return (
+      <T key={p.paymentId} style={{ fontSize: 12 * s, color: colors.muted, marginTop: 10 * s }}>
+        {p.payout === "sending" ? `Sending $${p.amount} ${what} through Whop…` : `Sending $${p.amount} ${what} failed — the wisher can retry.`}
+      </T>
+    );
+  });
 }

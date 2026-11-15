@@ -68,8 +68,10 @@ export default defineSchema({
     visibility: visibility,
     reward: v.optional(v.number()),
     // Engine B reward state. helperId is the honorer the wisher selected; it is
-    // set when the reward releases (free rewards immediately, paid ones when the
-    // Whop payment.succeeded webhook lands).
+    // locked in when the reward is paid (free rewards immediately, paid ones on
+    // the Whop payment.succeeded webhook). rewardReleasedAt is set once the
+    // helper has the money: immediately for free rewards, or when the Whop
+    // payout claim link is created.
     helperId: v.optional(v.id("users")),
     rewardReleasedAt: v.optional(v.number()),
     // Running total of paid crowdfunding contributions, in dollars.
@@ -116,16 +118,33 @@ export default defineSchema({
   }).index("by_conversation", ["conversationId"]),
 
   // One Whop checkout. Charge-on-select escrow: a reward row is created when the
-  // wisher selects a helper and flips to paid on the payment.succeeded webhook.
+  // wisher selects a helper, flips to paid on the payment.succeeded webhook, and
+  // is then paid out to the recipient as a Whop claim link. A reward payment that
+  // lands after the wish already has a paid helper is refunded.
   payments: defineTable({
     wishId: v.id("wishes"),
     payerId: v.id("users"),
     kind: paymentKind,
-    helperId: v.optional(v.id("users")),
+    // Who the money goes to: the selected helper for a reward, the wisher for a
+    // crowdfunding contribution.
+    recipientId: v.id("users"),
     amount: v.number(),
-    status: v.union(v.literal("pending"), v.literal("paid")),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("canceled"),
+      v.literal("paid"),
+      v.literal("refunding"),
+      v.literal("refunded"),
+    ),
     checkoutId: v.optional(v.string()),
+    checkoutUrl: v.optional(v.string()),
+    // The Whop account (biz_) the checkout charged into; payouts are sent from it.
+    accountId: v.optional(v.string()),
     whopPaymentId: v.optional(v.string()),
+    payout: v.optional(
+      v.union(v.literal("sending"), v.literal("sent"), v.literal("failed")),
+    ),
+    claimUrl: v.optional(v.string()),
     createdAt: v.number(),
     paidAt: v.optional(v.number()),
   }).index("by_wish", ["wishId"]),
