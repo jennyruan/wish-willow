@@ -176,9 +176,10 @@ export function VoiceField({
   prefix,
   suffix,
   onSubmit,
+  canSubmit = value.trim().length > 0,
   style,
   ...input
-}: Omit<TextInputProps, "style"> & { value: string; onChangeText: (t: string) => void; prefix?: ReactNode; suffix?: ReactNode; onSubmit?: () => void; style?: StyleProp<ViewStyle> }) {
+}: Omit<TextInputProps, "style"> & { value: string; onChangeText: (t: string) => void; prefix?: ReactNode; suffix?: ReactNode; onSubmit?: () => void; canSubmit?: boolean; style?: StyleProp<ViewStyle> }) {
   const { s } = useScale();
   return (
     <View
@@ -215,7 +216,7 @@ export function VoiceField({
       />
       {suffix}
       <MicButton
-        submit={onSubmit && value.trim() ? onSubmit : undefined}
+        submit={onSubmit && canSubmit ? onSubmit : undefined}
         onText={(text) => onChangeText(value.trim() ? `${value.trim()} ${text}` : text)}
       />
     </View>

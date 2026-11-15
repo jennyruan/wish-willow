@@ -116,6 +116,7 @@ export const listMessages = query({
         body: v.optional(v.string()),
         mediaId: v.optional(v.id("_storage")),
         mediaUrl: v.union(v.string(), v.null()),
+        mediaContentType: v.union(v.string(), v.null()),
         createdAt: v.number(),
       }),
     ),
@@ -142,6 +143,7 @@ export const listMessages = query({
     const page = [];
     for (const m of result.page) {
       const mediaUrl = m.mediaId ? await ctx.storage.getUrl(m.mediaId) : null;
+      const media = m.mediaId ? await ctx.db.system.get(m.mediaId) : null;
       page.push({
         _id: m._id,
         _creationTime: m._creationTime,
@@ -150,9 +152,63 @@ export const listMessages = query({
         body: m.body,
         mediaId: m.mediaId,
         mediaUrl,
+        mediaContentType: media?.contentType ?? null,
         createdAt: m.createdAt,
       });
     }
     return { ...result, page };
+  },
+});
+
+/**
+ * A user's conversations for the DM inbox, most recently active first, with the
+ * other participant's handle and the latest message preview. Bounded per side.
+ *
+ * NOTE: userId is client-supplied for the hackathon identity model; production
+ * derives it from the authenticated identity. See README.
+ */
+export const listMine = query({
+  args: { userId: v.id("users") },
+  returns: v.array(
+    v.object({
+      _id: v.id("conversations"),
+      otherId: v.id("users"),
+      otherHandle: v.union(v.string(), v.null()),
+      lastBody: v.union(v.string(), v.null()),
+      lastHasMedia: v.boolean(),
+      lastAt: v.number(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const [asUser1, asUser2] = await Promise.all([
+      ctx.db
+        .query("conversations")
+        .withIndex("by_user1", (q) => q.eq("user1", args.userId))
+        .take(100),
+      ctx.db
+        .query("conversations")
+        .withIndex("by_user2", (q) => q.eq("user2", args.userId))
+        .take(100),
+    ]);
+
+    const rows = [];
+    for (const c of [...asUser1, ...asUser2]) {
+      const otherId = c.user1 === args.userId ? c.user2 : c.user1;
+      const other = await ctx.db.get(otherId);
+      const last = await ctx.db
+        .query("messages")
+        .withIndex("by_conversation", (q) => q.eq("conversationId", c._id))
+        .order("desc")
+        .first();
+      rows.push({
+        _id: c._id,
+        otherId,
+        otherHandle: other?.handle ?? null,
+        lastBody: last?.body ?? null,
+        lastHasMedia: last?.mediaId !== undefined,
+        lastAt: last?.createdAt ?? c.createdAt,
+      });
+    }
+    return rows.sort((a, b) => b.lastAt - a.lastAt);
   },
 });
