@@ -111,8 +111,9 @@ function RealityControl({ wish, me }: { wish: Doc<"wishes">; me: Me }) {
 
 function Thread({ wish, me, isOwner, onReply, onMessage }: { wish: Doc<"wishes">; me: Me; isOwner: boolean; onReply: (c: Comment) => void; onMessage: (userId: Id<"users">) => void }) {
   const { s } = useScale();
-  const comments = useQuery(api.comments.listForWish, { wishId: wish._id, onlyApproved: true, order: "asc" });
-  if (comments === undefined) return <ActivityIndicator color={colors.red} style={{ marginTop: 20 * s }} />;
+  const newestFirst = useQuery(api.comments.listForWish, { wishId: wish._id, onlyApproved: true, order: "desc" });
+  if (newestFirst === undefined) return <ActivityIndicator color={colors.red} style={{ marginTop: 20 * s }} />;
+  const comments = [...newestFirst].reverse();
 
   const ids = new Set(comments.map((c) => c._id));
   const roots = comments.filter((c) => !c.parentId || !ids.has(c.parentId));

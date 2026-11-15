@@ -48,6 +48,7 @@ export function Composer({ placeholder, onSend, above }: { placeholder: string; 
         style={{ marginTop: 8 * s }}
         value={text}
         onChangeText={setText}
+        editable={!sending}
         placeholder={placeholder}
         onSubmit={send}
         canSubmit={!sending && (text.trim().length > 0 || attachment !== null)}
