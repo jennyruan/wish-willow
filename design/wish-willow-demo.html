@@ -124,6 +124,8 @@
   .tabbtn{flex:1;text-align:center;font-size:8px;letter-spacing:.03em;color:#8a7a5c;padding:8px 2px 11px;cursor:pointer;text-transform:uppercase;font-weight:700}
   .tabbtn.on{color:var(--red)}
   .tabbtn .ti{font-size:17px;margin-bottom:3px}
+  body.shotmode{padding:14px;min-height:auto}
+  body.shotmode .hero, body.shotmode .hint, body.shotmode .restart{display:none}
   /* wish list + detail */
   .wlrow{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:13px;padding:12px 13px;margin-top:9px;background:var(--cream-light);cursor:pointer}
   .wlrow:hover{border-color:var(--red)}
@@ -807,7 +809,18 @@ const STEP = {
   },
 };
 
-showWelcome();
+const SHOT=new URLSearchParams(location.search).get('shot');
+if(SHOT){
+  document.body.classList.add('shotmode');
+  if(SHOT==='clarify'){ pick('girlfriend'); }
+  else if(SHOT==='reward'){ pick('girlfriend'); const pi=state.steps.findIndex(s=>s.type==='privacy'); if(pi>=0)state.i=pi; state.a.privacy='Public'; state.a.reward='25'; render(); }
+  else if(SHOT==='result'){ pick('iphone'); state.a.config={model:'Pro',storage:'256GB',finish:'Black'}; state.a.budget='1500'; const ri=state.steps.findIndex(s=>s.type==='iphone-result'); if(ri>=0)state.i=ri; render(); }
+  else if(SHOT==='menu'){ openMenu('notif'); }
+  else if(SHOT==='community'){ openCommunity(); }
+  else { render(); }
+} else {
+  showWelcome();
+}
 </script>
 </body>
 </html>
