@@ -1,7 +1,8 @@
 import { useAction, useMutation } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Animated, BackHandler, Easing, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
+import { ActivityIndicator, Animated, BackHandler, Easing, Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { TopBar } from "../components/Chrome";
@@ -11,16 +12,18 @@ import { colors, fonts, useScale } from "../theme";
 import { uploadToConvex } from "../upload";
 import { EXAMPLE_WISHES, type WishKind } from "../wishKinds";
 
-type StepId = "locality" | "location" | "config" | "track" | "photos" | "budget" | "extra" | "privacy" | "blow";
+type StepId = "locality" | "location" | "config" | "track" | "photos" | "budget" | "ask" | "extra" | "privacy" | "blow";
+type Clarify = FunctionReturnType<typeof api.ai.clarifyWish>;
+type Research = FunctionReturnType<typeof api.ai.research>;
 type TimeUnit = "days" | "weeks" | "months" | "years";
 type Place = { label: string; lat: number; lng: number; source: string; fetchedAt: number };
 
 const STEPS: Record<WishKind, StepId[]> = {
-  girlfriend: ["locality", "photos", "budget", "extra", "privacy", "blow"],
-  boyfriend: ["locality", "photos", "budget", "extra", "privacy", "blow"],
-  iphone: ["config", "location", "budget", "extra", "privacy", "blow"],
-  hackathon: ["track", "extra", "privacy", "blow"],
-  other: ["budget", "extra", "privacy", "blow"],
+  girlfriend: ["locality", "photos", "budget", "ask", "extra", "privacy", "blow"],
+  boyfriend: ["locality", "photos", "budget", "ask", "extra", "privacy", "blow"],
+  iphone: ["config", "location", "budget", "ask", "extra", "privacy", "blow"],
+  hackathon: ["track", "ask", "extra", "privacy", "blow"],
+  other: ["budget", "ask", "extra", "privacy", "blow"],
 };
 
 const FINISHES: Record<string, string> = { Silver: "#DCDEE1", Black: "#2A2A2C", Glacier: "#C9DCE6", Burgundy: "#5E2733" };
@@ -40,6 +43,7 @@ type Answers = {
   budget: string;
   timeNum: number;
   timeUnit: TimeUnit;
+  aiAnswers: string[];
   extra: string;
   visibility?: "private" | "public";
   reward: string;
@@ -53,7 +57,7 @@ function wishText(kind: WishKind, customText: string, a: Answers) {
 
 const digits = (t: string) => t.replace(/[^0-9]/g, "");
 
-/** Adaptive clarify steps → anything else → private/public → blow, then wishes.create. */
+/** Adaptive clarify steps (plus Willow's AI questions) → anything else → private/public → blow, then wishes.create and ai.research. */
 export function WishFlow({
   me,
   kind,
@@ -72,14 +76,33 @@ export function WishFlow({
   const { s } = useScale();
   const steps = STEPS[kind];
   const [i, setI] = useState(0);
-  const [a, setA] = useState<Answers>({ locationText: "", place: null, config: {}, track: [], photos: [], note: "", budget: "", timeNum: 3, timeUnit: "months", extra: "", reward: "" });
+  const [a, setA] = useState<Answers>({ locationText: "", place: null, config: {}, track: [], photos: [], note: "", budget: "", timeNum: 3, timeUnit: "months", aiAnswers: [], extra: "", reward: "" });
   const [castState, setCastState] = useState<"casting" | "cast" | "failed">("casting");
+  const [clarify, setClarify] = useState<Clarify | null>(null);
+  const [wishId, setWishId] = useState<Id<"wishes"> | null>(null);
+  const [research, setResearch] = useState<Research | null>(null);
+  const [showResults, setShowResults] = useState(false);
   const create = useMutation(api.wishes.create);
+  const clarifyWish = useAction(api.ai.clarifyWish);
+  const runResearch = useAction(api.ai.research);
   const generateUploadUrl = useMutation(api.files.generateUploadUrl);
   const step = steps[i];
   const set = (patch: Partial<Answers>) => setA((prev) => ({ ...prev, ...patch }));
   const next = () => setI(i + 1);
   const back = () => (i === 0 ? onExit() : setI(i - 1));
+
+  useEffect(() => {
+    clarifyWish({ wishText: wishText(kind, customText, a), kind })
+      .then(setClarify)
+      .catch(() => setClarify({ status: "error", message: "Couldn’t reach Willow — check your connection." }));
+  }, []);
+
+  const startResearch = (id: Id<"wishes">) => {
+    setResearch(null);
+    runResearch({ wishId: id })
+      .then(setResearch)
+      .catch(() => setResearch({ status: "error", message: "Couldn’t reach Willow — check your connection." }));
+  };
 
   useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
@@ -104,9 +127,16 @@ export function WishFlow({
           extra: a.extra.trim() || undefined,
           photoIds: photoIds.length ? photoIds : undefined,
           place: wantsPlace ? a.place ?? undefined : undefined,
+          clarify:
+            clarify?.status === "ok"
+              ? {
+                  ...clarify.intake,
+                  answers: clarify.questions.map((question, n) => ({ question, answer: a.aiAnswers[n]?.trim() })).filter((qa) => qa.answer),
+                }
+              : undefined,
         }),
       );
-      await create({
+      const id = await create({
         ownerId: me._id,
         text: wishText(kind, customText, a),
         kind,
@@ -119,17 +149,28 @@ export function WishFlow({
         visibility: a.visibility ?? "private",
         reward: a.visibility === "public" && a.reward ? Number(a.reward) : undefined,
       });
+      setWishId(id);
       setCastState("cast");
+      startResearch(id);
     } catch {
       setCastState("failed");
     }
   };
 
+  if (step === "blow" && showResults && wishId) {
+    return (
+      <>
+        <TopBar handle={me.handle} />
+        <Results research={research} onRetry={() => startResearch(wishId)} onDone={onDone} />
+      </>
+    );
+  }
+
   if (step === "blow") {
     return (
       <>
         <TopBar handle={me.handle} />
-        <Blow state={castState} isPublic={a.visibility === "public"} onSee={onDone} onRetry={cast} />
+        <Blow state={castState} isPublic={a.visibility === "public"} onSee={() => setShowResults(true)} onRetry={cast} />
       </>
     );
   }
@@ -238,6 +279,39 @@ export function WishFlow({
               <Select label="How many" value={a.timeNum} options={NUMBERS} onChange={(timeNum) => set({ timeNum })} />
               <Select label="Unit" value={a.timeUnit} options={UNITS} onChange={(timeUnit) => set({ timeUnit })} />
             </View>
+          </>
+        )}
+
+        {step === "ask" && (
+          <>
+            <Kicker>Willow asks</Kicker>
+            {clarify === null && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 * s, marginTop: 14 * s }}>
+                <ActivityIndicator color={colors.red} />
+                <Sub style={{ marginTop: 0 }}>Willow is thinking about your wish…</Sub>
+              </View>
+            )}
+            {clarify !== null && clarify.status !== "ok" && (
+              <>
+                <Question>A few more questions</Question>
+                <Sub>{clarify.status === "not_configured" ? "Willow’s AI isn’t set up yet — tap Next to keep going." : `Willow couldn’t think this one through (${clarify.message}). Tap Next to keep going.`}</Sub>
+              </>
+            )}
+            {clarify?.status === "ok" && (
+              <>
+                <Sub>{clarify.intake.summary}</Sub>
+                {clarify.questions.map((question, n) => (
+                  <View key={question}>
+                    <Question size={19} style={{ marginTop: 18 * s }}>{question}</Question>
+                    <VoiceField
+                      value={a.aiAnswers[n] ?? ""}
+                      onChangeText={(t) => set({ aiAnswers: Object.assign([...a.aiAnswers], { [n]: t }) })}
+                      placeholder="type or speak…"
+                    />
+                  </View>
+                ))}
+              </>
+            )}
           </>
         )}
 
@@ -441,6 +515,63 @@ function Catkin({ dx, dy, rotate, delay }: { dx: number; dy: number; rotate: num
   );
 }
 
+const host = (url: string) => url.replace(/^https?:\/\/(www\.)?/i, "").split(/[/?#]/)[0];
+
+/** Willow's researched options: each card links to the real page and lists the sources that back it. */
+function Results({ research, onRetry, onDone }: { research: Research | null; onRetry: () => void; onDone: () => void }) {
+  const { s } = useScale();
+  return (
+    <ScrollView contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 22 * s, paddingTop: 12 * s, paddingBottom: 16 * s }}>
+      <Kicker>Willow found</Kicker>
+      <Question>{research?.status === "ok" ? "Real paths to your wish" : "Willow’s on it"}</Question>
+      {research === null && (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 * s, marginTop: 14 * s }}>
+          <ActivityIndicator color={colors.red} />
+          <Sub style={{ marginTop: 0, flex: 1 }}>Searching live sources for options within your budget and timeline…</Sub>
+        </View>
+      )}
+      {research?.status === "not_configured" && <Sub>Willow’s AI isn’t set up yet, so there’s no research for this wish. It’s saved — check back once Willow is configured.</Sub>}
+      {research?.status === "error" && (
+        <>
+          <Sub>Willow couldn’t finish the research ({research.message}).</Sub>
+          <CtaButton label="Try again" onPress={onRetry} />
+        </>
+      )}
+      {research?.status === "ok" && (
+        <>
+          <Sub>{research.summary}</Sub>
+          {research.options.length === 0 && <Sub>Willow couldn’t verify any options against a real source yet.</Sub>}
+          {research.options.map((o) => (
+            <View key={o.url + o.title} style={{ marginTop: 12 * s, borderWidth: 1.5, borderColor: colors.line, borderRadius: 13 * s, padding: 13 * s, backgroundColor: colors.cream }}>
+              <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 * s }}>
+                <T style={{ flex: 1, fontFamily: fonts.sansBold, fontSize: 14 * s }}>{o.title}</T>
+                {o.price && <T style={{ fontFamily: fonts.anton, fontSize: 14 * s, color: colors.red }}>{o.price}</T>}
+              </View>
+              <T style={{ fontSize: 12.5 * s, lineHeight: 12.5 * s * 1.4, color: colors.note, marginTop: 5 * s }}>{o.detail}</T>
+              <Pressable onPress={() => Linking.openURL(o.url)} accessibilityRole="link" style={{ alignSelf: "flex-start", marginTop: 10 * s, backgroundColor: colors.red, borderRadius: 10 * s, paddingVertical: 8 * s, paddingHorizontal: 14 * s }}>
+                <T style={{ fontFamily: fonts.sansBold, fontSize: 12 * s, color: colors.cream }}>{o.action} ↗</T>
+              </Pressable>
+              <T style={{ fontSize: 10.5 * s, color: colors.faint, marginTop: 8 * s }}>
+                Sources:{" "}
+                {o.sources.map((src, n) => (
+                  <T key={src} onPress={() => Linking.openURL(src)} style={{ textDecorationLine: "underline" }}>
+                    {host(src)}
+                    {n < o.sources.length - 1 ? ", " : ""}
+                  </T>
+                ))}
+                {" · fetched "}
+                {new Date(research.fetchedAt).toLocaleString()}
+              </T>
+            </View>
+          ))}
+        </>
+      )}
+      <View style={{ flex: 1 }} />
+      <CtaButton label="See my wishes" onPress={onDone} />
+    </ScrollView>
+  );
+}
+
 /** Catkins scatter from the twig while the wish is saved; the CTA fades in once it's cast. */
 function Blow({ state, isPublic, onSee, onRetry }: { state: "casting" | "cast" | "failed"; isPublic: boolean; onSee: () => void; onRetry: () => void }) {
   const { s } = useScale();
@@ -466,7 +597,7 @@ function Blow({ state, isPublic, onSee, onRetry }: { state: "casting" | "cast" |
         {state === "failed" ? "Couldn’t save your wish — check your connection and try again." : isPublic ? "Posted to the grove. Willow’s on it." : "Willow’s on it."}
       </Sub>
       <Animated.View style={{ opacity: cta, width: "100%", maxWidth: 220 * s, marginTop: 6 * s }} pointerEvents={ready ? "auto" : "none"}>
-        <CtaButton label={state === "failed" ? "Try again" : "See my wishes"} onPress={state === "failed" ? onRetry : onSee} />
+        <CtaButton label={state === "failed" ? "Try again" : "See what Willow found"} onPress={state === "failed" ? onRetry : onSee} />
       </Animated.View>
     </View>
   );
