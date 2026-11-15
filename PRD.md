@@ -52,6 +52,7 @@ Splash (2s, logo) → **"I Wish"** home (4 affirmation cards) → clarify (adapt
 
 **6b. Engine B — the community does it (social).** Willow drafts a post → confirm + blow → posts publicly → collects updates, checks in, and coaches. Two modes: **(i) Honor** — someone fulfills it (`publish → honorers reply → wisher selects → reward releases`); **(ii) Coach** — Willow + crowd advise what *you* can do.
 - **Reward:** free (thanks) or paid, **no cap on the amount (the user sets it)**. UI = quick-pick chips ($0 / $25 / $50 / $100) + a custom "price it" field. Paid rail = **Whop** (merchant-of-record; Convex holds state). **Escrow = charge-on-select.**
+- **Implemented (Whop reward rail):** `convex/whop.ts` checkout (charge-on-select, crowdfunding, no cap) + a verified `/whop` webhook in `convex/http.ts` + `payments` and `notifications` tables + the reward UI in `WishScreen`.
 - **When budget < price (e.g. the iPhone wish), Willow opens real paths:** **crowdfunding** — a Willow-**drafted title + post** the user can use, plus a list of real crowdfunding sites (GoFundMe · Fundly · Chuffed · GiveSendGo); and **financing** — a list of legit pay-over-time options (Apple Card Monthly Installments · Affirm · Klarna · PayPal Pay Later). Real links; real-info rule applies.
 
 **6c. Comparable — Fo by Wajo (positioning).** *wajo.ai* — AI action-agent that does to-dos within boundaries, buys via single-use cards, escalates to humans. Validates Engine A. Our wedge: **wishes not to-dos · a public community marketplace with rewards · place-anchored · voice-first consumer mobile.** Demo the community path — the part Fo lacks.
@@ -120,9 +121,10 @@ Vintage novelty / two-color letterpress. Colors: `paper #EBE0C6 · red #B23A2C �
 ## ── FOR THE AGENT (Capy build contract) ──
 
 ### 10. Scope
-- **v1 IN:** the flow (splash → I Wish → clarify → private/public → blow), 4 demo wish types, join-by-handle (unique handles), wish list, Engine A (safe form: OpenAI clarify + online research → a real result within budget/timeline; Deepgram STT + Aura TTS; **Supermemory** remembers-you profile), Engine B public feed + comments all-public (text/photo/video) + reward-on-select (Whop, no cap), **DMs** (tap-author or by handle), mark-as-reality; **Capy Cloud Build → Revyl cloud phone** (required-to-win integration) with Proof of Changes.
+- **v1 IN:** the flow (splash → I Wish → clarify → private/public → blow), 4 demo wish types, join-by-handle (unique handles), wish list, Engine A (safe form: OpenAI clarify + online research → a real result within budget/timeline; Deepgram STT + Aura TTS; **Supermemory** remembers-you profile), Engine B public feed + comments all-public (text/photo/video) + reward-on-select (Whop, no cap — **implemented**, see §6b), **DMs** (tap-author or by handle), mark-as-reality; **Capy Cloud Build → Revyl cloud phone** (required-to-win integration) with Proof of Changes. **Keiki daily nudge** (text/iMessage, opt-in): `convex/nudge.ts` + a daily cron in `convex/crons.ts` + an opt-in toggle in the @handle Notifications menu + streak wiring; FREE channels only (shared iMessage / Telegram).
+- **Shipped via PR #20** "Whop reward rail + Keiki daily nudge" (combined; supersedes #15 and #17). **Live setup:** both need their keys in the Convex env — `WHOP_API_KEY`, `WHOP_WEBHOOK_SECRET`, `WHOP_ENVIRONMENT=sandbox`, `KEIKI_API_KEY`.
 - **OUT (dropped):** Expo Web build, react-native-web, Vercel/EAS web hosting, any public web URL — not building these.
-- **Stretch:** unattended Engine A spend, Keiki iMessage nudge.
+- **Stretch:** unattended Engine A spend.
 - **OUT:** real matchmaking of specific strangers without consent; production auth.
 
 ### 11. Build order (PR-shaped for Capy; see `CAPY-TICKET-convex.md`)
