@@ -9,6 +9,9 @@ const userDoc = v.object({
   avatarId: v.optional(v.id("_storage")),
   deviceToken: v.string(),
   createdAt: v.number(),
+  dailyNudge: v.optional(v.boolean()),
+  streak: v.optional(v.number()),
+  lastCheckInAt: v.optional(v.number()),
 });
 
 /**

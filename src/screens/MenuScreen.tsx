@@ -1,4 +1,4 @@
-import { useConvex, useQuery } from "convex/react";
+import { useConvex, useMutation, useQuery } from "convex/react";
 import { useState, type ReactNode } from "react";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 import { api } from "../../convex/_generated/api";
@@ -41,7 +41,12 @@ export function MenuScreen({
         <View style={{ marginTop: 6 * s }}>
           {tab === "wishes" && <WishList ownerId={me._id} onOpen={onOpenWish} />}
           {tab === "dms" && <Inbox me={me} onOpen={onOpenDm} />}
-          {tab === "notif" && <Notifications userId={me._id} onOpen={onOpenWish} />}
+          {tab === "notif" && (
+            <>
+              <DailyNudge userId={me._id} />
+              <Notifications userId={me._id} onOpen={onOpenWish} />
+            </>
+          )}
         </View>
       </ScrollView>
     </>
@@ -82,6 +87,24 @@ function Notifications({ userId, onOpen }: { userId: Id<"users">; onOpen: (wishI
       </Row>
     );
   });
+}
+
+/** Opt in to Willow's daily check-in over text (Keiki, free shared iMessage number or Telegram). */
+function DailyNudge({ userId }: { userId: Id<"users"> }) {
+  const { s } = useScale();
+  const enabled = useQuery(api.nudge.status, { userId });
+  const setDailyNudge = useMutation(api.nudge.setDailyNudge);
+  return (
+    <Row icon="💬" onPress={enabled === undefined ? undefined : () => setDailyNudge({ userId, enabled: !enabled })}>
+      <View style={{ flex: 1 }}>
+        <Question size={14}>Daily nudge over text</Question>
+        <T style={{ fontSize: 11.5 * s, color: colors.muted, marginTop: 2 * s }}>Willow texts your daily wish check-in.</T>
+      </View>
+      <T style={{ fontFamily: fonts.sansBold, fontSize: 11 * s, color: enabled ? colors.red : colors.faint }}>
+        {enabled === undefined ? "…" : enabled ? "ON" : "OFF"}
+      </T>
+    </Row>
+  );
 }
 
 function Inbox({ me, onOpen }: { me: Me; onOpen: (userId: Id<"users">) => void }) {
