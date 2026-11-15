@@ -102,10 +102,11 @@ media         // Convex file storage (photo/video), referenced by mediaId
 
 **Every user has a wish list** (`listMine` / `countMine`): their own wishes, newest first; realized ones shown as **reality**.
 
-### 8. Access & distribution (zero-install for test users)
-- **Wisher / demoer** (needs voice + blow): native app via **Expo Go / TestFlight**.
-- **Everyone else — the room, test users** (join, browse public wishes, comment, upload, DM): a **web link + QR** → same Convex backend → **no install**. Built as **Expo Web (react-native-web)**, one codebase, deployed on **EAS Hosting**, with **tap/type fallbacks** for the native-only voice/blow bits.
-- **Revyl** = automated AI testing on cloud simulators (needs an EAS simulator build, not Expo Go; Capy auto-connects it) — NOT a way to onboard humans.
+### 8. Access & distribution (zero-install) — two complementary channels
+Wish Willow's demo value is **multi-user participation** (friends on their own phones, each a distinct handle, commenting on and helping each other's wishes). Distribution (friends participate) and verification/review (judges + CI) are **different jobs served by different channels** — we run both, neither replaces the other.
+
+- **Channel A — participation (Expo Web + EAS Hosting):** the friends-use-it-together surface. A **public web link + QR** → same Convex backend → **no install, no account gate**. Built as **Expo Web (react-native-web)**, one codebase, deployed on **EAS Hosting**, with **tap/type fallbacks** for the native-only voice/blow bits. This is how the room, and friends remotely, join by handle and interact concurrently. *(Wisher/demoer who wants voice + blow: native app via Expo Go / TestFlight.)*
+- **Channel B — verification + review (Revyl Proof of Changes):** Revyl runs the real app on **cloud devices** to (1) **auto-test every PR** (visual "proof of changes", screenshots + verdict posted on the PR) and (2) give a **shareable live preview link + recorded session replay** — the reliable "latest build" walkthrough for **judges / the pitch**. Setup is via Revyl's agent-setup prompt (`revyl.com/agent-setup/prompt.md`), run by Capy; Jenny supplies the Revyl API key + approves the Revyl GitHub App (her credential/account actions). Needs the app to exist + an EAS build, so it sits **on top of** Channel A. It is a review/CI surface — **not** the way friends independently participate (preview sessions are review-oriented, likely gated behind Revyl access).
 
 ### 9. Design system (hand to Capy as the design contract)
 Vintage novelty / two-color letterpress. Colors: `paper #EBE0C6 · red #B23A2C · red-deep #8E2C20 · ink #241C16 · ochre #C68A38`. Fonts: **Anton** (logotype/buttons) · **Yeseva One** (the "wish" voice / questions) · **DM Sans** (body/UI). Motifs: willow-twig roundel logo, starbursts, "1 wish" badge, letterpress grain, stamp-buttons with hard red-deep drop-shadow, catkin blow animation. Reference the aesthetic, draw original marks (not the film's artifact). Reference mockup: `wish-willow-demo.html`; logo: `wish-willow-logo.svg`.
@@ -127,13 +128,13 @@ Vintage novelty / two-color letterpress. Colors: `paper #EBE0C6 · red #B23A2C �
 3. **Community** — comment thread (text/photo/video via upload), **comments all public (no gate)** with owner remove/delete as a safety net, mark-as-reality; **DMs**.
 4. **Zero-install web** — Expo Web participation surface (feed/wish/comment/DM) + QR; tap fallbacks for voice/blow.
 5. **Engine A** — Willow assembles a budgeted result + one-tap authorize (single-use card pattern).
-6. **Polish + Revyl** — one English smoke test on an EAS simulator build; capture evidence.
+6. **Polish + Revyl Proof of Changes** — wire Revyl (agent-setup prompt, run by Capy; Jenny adds API key + approves the GitHub App): PR-triggered visual tests on a cloud/EAS build + a shareable preview link & session replay for the pitch. At least one English flow passes; capture the recording.
 
 ### 12. Verify
 - `npx convex dev` compiles (validators/indexes clean); seed populates demo data (self-evidently labeled).
 - Two devices/sessions: public wish on one appears in the other's feed; a photo reply posts and shows **live immediately** (no gate); owner can remove it; DM round-trips; mark-as-reality flips a wish to reality.
 - Zero-install: open the web URL on a phone with no app installed → join by handle → comment on a public wish → it appears live.
-- Revyl: one English flow passes on the EAS simulator build; save the recording.
+- Revyl: Proof of Changes is enabled (PR gets a visual verdict + screenshots); at least one English flow passes on the cloud/EAS build; a shareable preview link + session recording exist for the pitch.
 
 ### 13. Hard rules (`RULES.md`)
 - **Rule 0 — we plan, Capy builds.** No app code / commits / pushes from us.
