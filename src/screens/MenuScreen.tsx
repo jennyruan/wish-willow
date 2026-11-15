@@ -41,7 +41,7 @@ export function MenuScreen({
         <View style={{ marginTop: 6 * s }}>
           {tab === "wishes" && <WishList ownerId={me._id} onOpen={onOpenWish} />}
           {tab === "dms" && <Inbox me={me} onOpen={onOpenDm} />}
-          {tab === "notif" && <Empty text="No notifications yet." />}
+          {tab === "notif" && <Notifications userId={me._id} onOpen={onOpenWish} />}
         </View>
       </ScrollView>
     </>
@@ -64,6 +64,24 @@ function WishList({ ownerId, onOpen }: { ownerId: Id<"users">; onOpen: (wishId: 
       <StatusLabel realized={w.realized} />
     </Row>
   ));
+}
+
+const NOTIF_ICON = { comment: "💬", fund: "💸", rsvp: "🎟️", reward: "🎁", match: "💞" } as const;
+
+function Notifications({ userId, onOpen }: { userId: Id<"users">; onOpen: (wishId: Id<"wishes">) => void }) {
+  const { s } = useScale();
+  const items = useQuery(api.notifications.listMine, { userId });
+  if (items === undefined) return <ActivityIndicator color={colors.red} style={{ marginTop: 24 * s }} />;
+  if (items.length === 0) return <Empty text="No notifications yet." />;
+  return items.map((n) => {
+    const wishId = n.wishId;
+    return (
+      <Row key={n._id} icon={NOTIF_ICON[n.kind]} onPress={wishId ? () => onOpen(wishId) : undefined}>
+        <T style={{ flex: 1, fontSize: 13 * s, lineHeight: 13 * s * 1.35, color: colors.note }}>{n.text}</T>
+        <T style={{ fontFamily: fonts.sansBold, fontSize: 10 * s, color: colors.faint }}>{timeAgo(n.createdAt)}</T>
+      </Row>
+    );
+  });
 }
 
 function Inbox({ me, onOpen }: { me: Me; onOpen: (userId: Id<"users">) => void }) {

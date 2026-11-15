@@ -34,6 +34,16 @@ export const commentKind = v.union(
   v.literal("match"),
 );
 
+export const paymentKind = v.union(v.literal("reward"), v.literal("fund"));
+
+export const notificationKind = v.union(
+  v.literal("comment"),
+  v.literal("fund"),
+  v.literal("rsvp"),
+  v.literal("reward"),
+  v.literal("match"),
+);
+
 export default defineSchema({
   users: defineTable({
     handle: v.string(),
@@ -57,6 +67,13 @@ export default defineSchema({
     timeUnit: v.optional(timeUnit),
     visibility: visibility,
     reward: v.optional(v.number()),
+    // Engine B reward state. helperId is the honorer the wisher selected; it is
+    // set when the reward releases (free rewards immediately, paid ones when the
+    // Whop payment.succeeded webhook lands).
+    helperId: v.optional(v.id("users")),
+    rewardReleasedAt: v.optional(v.number()),
+    // Running total of paid crowdfunding contributions, in dollars.
+    funded: v.optional(v.number()),
     status: wishStatus,
     // "Reality": a wish that has come true. Realized wishes are marked as reality in the UI.
     realized: v.boolean(),
@@ -97,4 +114,28 @@ export default defineSchema({
     mediaId: v.optional(v.id("_storage")),
     createdAt: v.number(),
   }).index("by_conversation", ["conversationId"]),
+
+  // One Whop checkout. Charge-on-select escrow: a reward row is created when the
+  // wisher selects a helper and flips to paid on the payment.succeeded webhook.
+  payments: defineTable({
+    wishId: v.id("wishes"),
+    payerId: v.id("users"),
+    kind: paymentKind,
+    helperId: v.optional(v.id("users")),
+    amount: v.number(),
+    status: v.union(v.literal("pending"), v.literal("paid")),
+    checkoutId: v.optional(v.string()),
+    whopPaymentId: v.optional(v.string()),
+    createdAt: v.number(),
+    paidAt: v.optional(v.number()),
+  }).index("by_wish", ["wishId"]),
+
+  notifications: defineTable({
+    userId: v.id("users"),
+    kind: notificationKind,
+    text: v.string(),
+    wishId: v.optional(v.id("wishes")),
+    read: v.boolean(),
+    createdAt: v.number(),
+  }).index("by_user", ["userId"]),
 });
