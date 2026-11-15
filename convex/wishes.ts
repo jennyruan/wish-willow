@@ -23,6 +23,9 @@ const wishDoc = v.object({
   timeUnit: v.optional(timeUnit),
   visibility: visibility,
   reward: v.optional(v.number()),
+  helperId: v.optional(v.id("users")),
+  rewardReleasedAt: v.optional(v.number()),
+  funded: v.optional(v.number()),
   status: v.union(
     v.literal("open"),
     v.literal("fulfilled"),
@@ -137,6 +140,9 @@ export const setVisibility = mutation({
     const wish = await ctx.db.get(args.wishId);
     if (!wish) throw new Error("wish not found");
     assertMoney(args.reward, "reward");
+    if (args.reward !== undefined && wish.rewardReleasedAt !== undefined) {
+      throw new Error("the reward was already released");
+    }
 
     const patch: { visibility: "private" | "public"; reward?: number } = {
       visibility: args.visibility,

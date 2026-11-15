@@ -1,7 +1,8 @@
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { useState } from "react";
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from "react-native";
+import * as WebBrowser from "expo-web-browser";
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
 import { api } from "../../convex/_generated/api";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import { Composer } from "../components/Composer";
@@ -20,7 +21,9 @@ type Comment = FunctionReturnType<typeof api.comments.listForWish>[number];
 export function WishScreen({ me, wishId, onBack, onMessage }: { me: Me; wishId: Id<"wishes">; onBack: () => void; onMessage: (userId: Id<"users">) => void }) {
   const { s } = useScale();
   const wish = useQuery(api.wishes.get, { wishId });
-  const owner = useQuery(api.users.handles, wish ? { ids: [wish.ownerId] } : "skip")?.[0];
+  const people = useQuery(api.users.handles, wish ? { ids: wish.helperId ? [wish.ownerId, wish.helperId] : [wish.ownerId] } : "skip");
+  const owner = people?.[0];
+  const helper = wish?.helperId ? people?.[1] : undefined;
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const addComment = useMutation(api.comments.add);
 
@@ -47,11 +50,21 @@ export function WishScreen({ me, wishId, onBack, onMessage }: { me: Me; wishId: 
         <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 * s, marginTop: 9 * s }}>
           <StatusLabel realized={wish.realized} />
           <T style={{ fontSize: 11.5 * s, color: colors.muted }}>
-            {[owner && (isOwner ? "your wish" : `@${owner.handle}`), isPublic ? "🌍 Public" : "🔒 Private", wish.reward ? `$${wish.reward} reward` : null, timeAgo(wish.createdAt)].filter(Boolean).join(" · ")}
+            {[owner && (isOwner ? "your wish" : `@${owner.handle}`), isPublic ? "🌍 Public" : "🔒 Private", wish.reward ? `${wish.reward} reward` : null, wish.funded ? `${wish.funded} chipped in` : null, timeAgo(wish.createdAt)].filter(Boolean).join(" · ")}
           </T>
         </View>
 
+        {wish.rewardReleasedAt !== undefined && helper && (
+          <View style={{ marginTop: 12 * s }}>
+            <Pill tone="true" text={wish.reward ? `🎁 ${wish.reward} reward released to @${helper.handle}` : `🎁 @${helper.handle} helped — thank you`} />
+          </View>
+        )}
+
         {isOwner ? <RealityControl wish={wish} me={me} /> : owner && <CtaButton label={`✉️ Message @${owner.handle}`} onPress={() => onMessage(wish.ownerId)} />}
+
+        {isPublic && <Payouts wish={wish} me={me} />}
+
+        {isPublic && !isOwner && <ChipIn wish={wish} me={me} />}
 
         {isPublic ? (
           <Thread wish={wish} me={me} isOwner={isOwner} onReply={setReplyTo} onMessage={onMessage} />
@@ -139,8 +152,24 @@ function Thread({ wish, me, isOwner, onReply, onMessage }: { wish: Doc<"wishes">
 function CommentRow({ c, depth, me, wish, canRemove, onReply, onMessage }: { c: Comment; depth: number; me: Me; wish: Doc<"wishes">; canRemove: boolean; onReply: () => void; onMessage: (userId: Id<"users">) => void }) {
   const { s } = useScale();
   const reject = useMutation(api.comments.reject);
+  const createCheckout = useAction(api.whop.createCheckout);
   const [confirming, setConfirming] = useState(false);
+  const [picking, setPicking] = useState<"idle" | "confirm" | "busy">("idle");
+  const [payError, setPayError] = useState<string | null>(null);
   const mine = c.authorId === me._id;
+  const canPick = canRemove && wish.helperId === undefined && c.authorId !== wish.ownerId;
+  const pick = async () => {
+    setPicking("busy");
+    setPayError(null);
+    try {
+      const { purchaseUrl } = await createCheckout({ wishId: wish._id, userId: me._id, kind: "reward", helperId: c.authorId });
+      if (purchaseUrl) await WebBrowser.openBrowserAsync(purchaseUrl);
+    } catch (e) {
+      setPayError(e instanceof Error ? e.message : "Couldn’t start the reward checkout.");
+    } finally {
+      setPicking("idle");
+    }
+  };
   const handle = c.authorHandle ?? "unknown";
   const action = { fontFamily: fonts.sansBold, fontSize: 11.5 * s, color: colors.red };
   return (
@@ -157,6 +186,7 @@ function CommentRow({ c, depth, me, wish, canRemove, onReply, onMessage }: { c: 
           </T>
         </Pressable>
         {c.kind === "match" && <Pill tone="true" text="match" />}
+        {wish.helperId === c.authorId && c.authorId !== wish.ownerId && <Pill tone={wish.rewardReleasedAt === undefined ? "prog" : "true"} text={wish.rewardReleasedAt === undefined ? "paid · sending" : wish.reward ? "paid ✓" : "helper ✓"} />}
       </View>
       {c.body ? <T style={{ fontSize: 13.5 * s, lineHeight: 13.5 * s * 1.4, color: colors.note, marginTop: 6 * s }}>{c.body}</T> : null}
       {c.mediaUrl && (c.kind === "photo" || c.kind === "video") && (
@@ -185,7 +215,100 @@ function CommentRow({ c, depth, me, wish, canRemove, onReply, onMessage }: { c: 
               <T style={{ ...action, color: colors.muted }}>Remove</T>
             </Pressable>
           ))}
+        {canPick &&
+          (picking === "idle" ? (
+            <Pressable onPress={() => setPicking("confirm")} hitSlop={8} accessibilityRole="button">
+              <T style={action}>🎁 Pick @{handle}</T>
+            </Pressable>
+          ) : (
+            <>
+              <Pressable onPress={pick} disabled={picking === "busy"} hitSlop={8} accessibilityRole="button">
+                <T style={action}>{picking === "busy" ? "Opening…" : wish.reward ? `Pay ${wish.reward} reward` : "Confirm (free thanks)"}</T>
+              </Pressable>
+              {picking === "confirm" && (
+                <Pressable onPress={() => setPicking("idle")} hitSlop={8} accessibilityRole="button">
+                  <T style={{ ...action, color: colors.muted }}>Cancel</T>
+                </Pressable>
+              )}
+            </>
+          ))}
       </View>
+      {payError && <T style={{ fontSize: 11.5 * s, color: colors.redDeep, marginTop: 6 * s }}>{payError}</T>}
     </View>
   );
+}
+
+const CHIP_IN = [5, 10, 25];
+
+/** Crowdfunding: anyone but the wisher can chip in toward a public wish through a Whop checkout. */
+function ChipIn({ wish, me }: { wish: Doc<"wishes">; me: Me }) {
+  const { s } = useScale();
+  const createCheckout = useAction(api.whop.createCheckout);
+  const [amount, setAmount] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const value = Number(amount);
+  const go = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const { purchaseUrl } = await createCheckout({ wishId: wish._id, userId: me._id, kind: "fund", amount: value });
+      if (purchaseUrl) await WebBrowser.openBrowserAsync(purchaseUrl);
+      setAmount("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn’t start the checkout.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <>
+      <GroupLabel>chip in</GroupLabel>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 * s, marginTop: 6 * s }}>
+        {CHIP_IN.map((v) => (
+          <Pressable key={v} onPress={() => setAmount(String(v))} accessibilityRole="button" accessibilityState={{ selected: amount === String(v) }}>
+            <View style={{ borderWidth: 1.5, borderColor: colors.red, borderRadius: 16 * s, paddingVertical: 6 * s, paddingHorizontal: 12 * s, backgroundColor: amount === String(v) ? colors.red : "transparent" }}>
+              <T style={{ fontFamily: fonts.sansBold, fontSize: 12 * s, color: amount === String(v) ? colors.cream : colors.red }}>${v}</T>
+            </View>
+          </Pressable>
+        ))}
+        <T style={{ fontFamily: fonts.anton, fontSize: 18 * s, color: colors.red }}>$</T>
+        <TextInput
+          value={amount}
+          onChangeText={(t) => setAmount(t.replace(/[^0-9]/g, ""))}
+          placeholder="other"
+          placeholderTextColor={colors.faint}
+          keyboardType="number-pad"
+          inputMode="numeric"
+          maxFontSizeMultiplier={1.25}
+          style={{ flex: 1, fontFamily: fonts.sans, fontSize: 14 * s, color: colors.ink, paddingVertical: 4 * s, outlineStyle: "none" } as object}
+        />
+      </View>
+      <CtaButton label={busy ? "Opening checkout…" : value > 0 ? `Chip in $${value}` : "Chip in"} disabled={busy || !(value > 0)} onPress={go} />
+      {error && <T style={{ fontSize: 11.5 * s, color: colors.redDeep, marginTop: 6 * s }}>{error}</T>}
+    </>
+  );
+}
+
+/** Whop payouts on this wish: the recipient claims theirs, the wisher sees progress and retries a failed one. */
+function Payouts({ wish, me }: { wish: Doc<"wishes">; me: Me }) {
+  const { s } = useScale();
+  const payouts = useQuery(api.whop.payoutsForWish, { wishId: wish._id, userId: me._id });
+  const retry = useMutation(api.whop.retryPayout);
+  if (!payouts?.length) return null;
+  return payouts.map((p) => {
+    const what = p.kind === "reward" ? "reward" : "contribution";
+    if (p.claimUrl) {
+      return <CtaButton key={p.paymentId} label={`Claim your $${p.amount} ${what}`} onPress={() => WebBrowser.openBrowserAsync(p.claimUrl!)} />;
+    }
+    if (p.payout === "failed" && wish.ownerId === me._id) {
+      return <CtaButton key={p.paymentId} label={`Retry sending $${p.amount} ${what}`} onPress={() => retry({ paymentId: p.paymentId, userId: me._id })} />;
+    }
+    if (p.payout === "sent") return null;
+    return (
+      <T key={p.paymentId} style={{ fontSize: 12 * s, color: colors.muted, marginTop: 10 * s }}>
+        {p.payout === "sending" ? `Sending $${p.amount} ${what} through Whop…` : `Sending $${p.amount} ${what} failed — the wisher can retry.`}
+      </T>
+    );
+  });
 }
