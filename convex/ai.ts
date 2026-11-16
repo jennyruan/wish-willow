@@ -23,6 +23,7 @@ const clarifyResult = v.union(
       details: v.array(v.string()),
     }),
     questions: v.array(v.string()),
+    options: v.array(v.array(v.string())),
   }),
   notConfigured,
   failed,
@@ -100,6 +101,7 @@ export const clarifyWish = action({
           "Then write the 1 to 3 most useful clarifying questions that would let you research real, actionable options. Ask about what is missing, not what was already said. Keep each question short and warm.",
           "The app asks the user about these topics on its own screens, so never ask about any of them, even reworded: " + (ASKED_BY_WIZARD[args.kind] ?? ASKED_BY_WIZARD.other).join("; ") + ".",
           "Each question must cover a different topic from every other question.",
+          "For every question that offers or implies a choice between alternatives (for example \"A, B, or both?\" or \"Would you prefer X or Y?\"), list each choice in that question's options as a short tappable label, including a combined choice like \"Both\" when the question offers one. Use an empty options array only for fully open-ended questions.",
         ].join("\n"),
         input: `Wish category: ${args.kind}\nWish: ${wishText}`,
         text: {
@@ -118,7 +120,20 @@ export const clarifyWish = action({
                 timeline: nullable("string"),
                 location: nullable("string"),
                 details: { type: "array", items: { type: "string" } },
-                questions: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 3 },
+                questions: {
+                  type: "array",
+                  minItems: 1,
+                  maxItems: 3,
+                  items: {
+                    type: "object",
+                    additionalProperties: false,
+                    required: ["question", "options"],
+                    properties: {
+                      question: { type: "string" },
+                      options: { type: "array", items: { type: "string" }, maxItems: 5 },
+                    },
+                  },
+                },
               },
             },
           },
@@ -131,9 +146,10 @@ export const clarifyWish = action({
         timeline: string | null;
         location: string | null;
         details: string[];
-        questions: string[];
+        questions: Array<{ question: string; options: string[] }>;
       };
-      return { status: "ok" as const, intake, questions: questions.filter((q) => args.kind === "hackathon" || !WIZARD_TOPIC.test(q)).slice(0, 3) };
+      const kept = questions.filter((q) => args.kind === "hackathon" || !WIZARD_TOPIC.test(q.question)).slice(0, 3);
+      return { status: "ok" as const, intake, questions: kept.map((q) => q.question), options: kept.map((q) => q.options) };
     } catch (err) {
       return { status: "error" as const, message: errorMessage(err) };
     }
