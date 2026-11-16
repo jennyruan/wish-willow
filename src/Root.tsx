@@ -25,7 +25,7 @@ type Route =
   | { name: "flow"; kind: WishKind; customText?: string; key: number };
 
 export function Root() {
-  const { identity, join } = useIdentity();
+  const { identity, join, signOut } = useIdentity();
   const getOrCreateConversation = useMutation(api.dms.getOrCreateConversation);
   const streak = useStreak(identity.status === "ready" ? identity.user._id : undefined);
   const [splashDone, setSplashDone] = useState(false);
@@ -57,7 +57,7 @@ export function Root() {
 
   if (route.name === "dm") {
     return (
-      <Screen>
+      <Screen onHome={home}>
         <DmScreen key={route.conversationId} me={me} conversationId={route.conversationId} otherId={route.otherId} onBack={() => setRoute(route.from)} />
       </Screen>
     );
@@ -65,7 +65,7 @@ export function Root() {
 
   if (route.name === "flow") {
     return (
-      <Screen>
+      <Screen onHome={home}>
         <WishFlow
           key={route.key}
           me={me}
@@ -82,7 +82,7 @@ export function Root() {
   const tabRoute = route.name === "wish" ? route.from : route;
   const activeTab = tabRoute.name === "menu" ? tabRoute.tab : tabRoute.name === "community" ? "community" : null;
   return (
-    <Screen tabBar={<TabBar active={activeTab} onSelect={openTab} />}>
+    <Screen onHome={home} tabBar={<TabBar active={activeTab} onSelect={openTab} />}>
       {route.name === "home" && (
         <HomeScreen
           handle={me.handle}
@@ -93,7 +93,7 @@ export function Root() {
         />
       )}
       {route.name === "menu" && (
-        <MenuScreen me={me} tab={route.tab} onTab={(tab) => setRoute({ name: "menu", tab })} onBack={home} onOpenWish={openWish} onOpenDm={openDm} />
+        <MenuScreen me={me} tab={route.tab} onTab={(tab) => setRoute({ name: "menu", tab })} onBack={home} onOpenWish={openWish} onOpenDm={openDm} onLogOut={() => signOut().then(home)} />
       )}
       {route.name === "community" && <CommunityScreen onBack={home} onOpenWish={openWish} />}
       {route.name === "wish" && <WishScreen key={route.wishId} me={me} wishId={route.wishId} onBack={() => setRoute(route.from)} onMessage={openDm} />}

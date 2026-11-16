@@ -141,6 +141,7 @@ export function MicButton({ onText, submit }: { onText: (text: string) => void; 
   const voice = useVoiceInput(onText);
   const size = 36 * s;
   const icon = submit ? "➤" : "🎙";
+  if (!submit && !voice.available) return <View style={{ alignItems: "flex-end" }}>{voice.error && <VoiceError text={voice.error} />}</View>;
   return (
     <View style={{ alignItems: "flex-end" }}>
       <Pressable

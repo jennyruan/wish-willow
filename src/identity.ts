@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useMutation } from "convex/react";
 import { randomUUID } from "expo-crypto";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 
@@ -34,14 +34,19 @@ function joinError(e: unknown) {
  * Join-by-handle identity: the device keeps a random token and the user it
  * joined as. On launch a cached user is shown at once and re-joined in the
  * background; without one, it re-joins with the stored handle or prompts once.
+ * Signing out drops the device token too, so the next new handle becomes a new
+ * user instead of renaming the old one.
  */
 export function useIdentity() {
   const joinByHandle = useMutation(api.users.joinByHandle);
   const [identity, setIdentity] = useState<Identity>({ status: "loading" });
+  const session = useRef(0);
 
   const signIn = useCallback(
     async (handle: string) => {
+      const started = session.current;
       const user = await joinByHandle({ handle, deviceToken: await deviceToken() });
+      if (session.current !== started) return;
       const me = { _id: user._id, handle: user.handle };
       await AsyncStorage.multiSet([[HANDLE_KEY, me.handle], [USER_KEY, JSON.stringify(me)]]);
       setIdentity({ status: "ready", user: me });
@@ -50,9 +55,20 @@ export function useIdentity() {
   );
 
   const join = useCallback(
-    (handle: string) => signIn(handle).catch((e) => setIdentity({ status: "needsHandle", handle, error: joinError(e) })),
+    (handle: string) => {
+      const started = session.current;
+      return signIn(handle).catch((e) => {
+        if (session.current === started) setIdentity({ status: "needsHandle", handle, error: joinError(e) });
+      });
+    },
     [signIn],
   );
+
+  const signOut = useCallback(async () => {
+    session.current += 1;
+    await AsyncStorage.multiRemove([USER_KEY, HANDLE_KEY, TOKEN_KEY]);
+    setIdentity({ status: "needsHandle", handle: "" });
+  }, []);
 
   useEffect(() => {
     AsyncStorage.multiGet([USER_KEY, HANDLE_KEY]).then(([[, cached], [, handle]]) => {
@@ -65,5 +81,5 @@ export function useIdentity() {
     });
   }, [join, signIn]);
 
-  return { identity, join };
+  return { identity, join, signOut };
 }
