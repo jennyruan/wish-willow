@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Dimensions, Keyboard, Platform, Pressable, View } from "react-native";
+import { Dimensions, Keyboard, Platform, Pressable, View, type KeyboardEvent } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, fonts, useScale } from "../theme";
 import { Paper } from "./Paper";
@@ -14,23 +14,34 @@ import { Avatar, T } from "./ui";
  */
 export function KeyboardAvoider({ children }: { children: ReactNode }) {
   const ref = useRef<View>(null);
+  const keyboardTop = useRef<number | null>(null);
   const [pad, setPad] = useState(0);
+
+  const measure = () => {
+    const top = keyboardTop.current;
+    if (top === null) return setPad(0);
+    ref.current?.measureInWindow((_x, y, _w, h) => setPad(Math.max(0, y + h - top)));
+  };
 
   useEffect(() => {
     const ios = Platform.OS === "ios";
-    const show = Keyboard.addListener(ios ? "keyboardWillShow" : "keyboardDidShow", (e) => {
-      const keyboardTop = e.endCoordinates.screenY || Dimensions.get("window").height - e.endCoordinates.height;
-      ref.current?.measureInWindow((_x, y, _w, h) => setPad(Math.max(0, y + h - keyboardTop)));
-    });
-    const hide = Keyboard.addListener(ios ? "keyboardWillHide" : "keyboardDidHide", () => setPad(0));
-    return () => {
-      show.remove();
-      hide.remove();
+    const onFrame = (e: KeyboardEvent) => {
+      keyboardTop.current = e.endCoordinates.screenY || Dimensions.get("window").height - e.endCoordinates.height;
+      measure();
     };
+    const subs = [
+      Keyboard.addListener(ios ? "keyboardWillShow" : "keyboardDidShow", onFrame),
+      Keyboard.addListener(ios ? "keyboardWillChangeFrame" : "keyboardDidChangeFrame", (e) => Keyboard.isVisible() && onFrame(e)),
+      Keyboard.addListener(ios ? "keyboardWillHide" : "keyboardDidHide", () => {
+        keyboardTop.current = null;
+        setPad(0);
+      }),
+    ];
+    return () => subs.forEach((sub) => sub.remove());
   }, []);
 
   return (
-    <View ref={ref} style={{ flex: 1 }}>
+    <View ref={ref} style={{ flex: 1 }} onLayout={measure}>
       <View style={{ flex: 1, marginBottom: pad }}>{children}</View>
     </View>
   );
