@@ -1,11 +1,11 @@
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { useState } from "react";
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 import { api } from "../../convex/_generated/api";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import { Composer } from "../components/Composer";
-import { TopBar } from "../components/Chrome";
+import { KeyboardAvoider, TopBar } from "../components/Chrome";
 import { MediaView } from "../components/Media";
 import { CtaButton, GroupLabel, Kicker, Pill, Question, StatusLabel, T } from "../components/ui";
 import type { Me } from "../identity";
@@ -37,7 +37,7 @@ export function WishScreen({ me, wishId, onBack, onMessage }: { me: Me; wishId: 
   const isOwner = wish.ownerId === me._id;
   const isPublic = wish.visibility === "public";
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoider>
       <TopBar title="WISH" onBack={onBack} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 22 * s, paddingTop: 12 * s, paddingBottom: 16 * s }} keyboardShouldPersistTaps="handled">
         <Kicker>{wish.realized ? "✓ came true" : "in progress"}</Kicker>
@@ -80,7 +80,7 @@ export function WishScreen({ me, wishId, onBack, onMessage }: { me: Me; wishId: 
           }}
         />
       )}
-    </KeyboardAvoidingView>
+    </KeyboardAvoider>
   );
 }
 

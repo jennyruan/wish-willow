@@ -1,9 +1,40 @@
-import type { ReactNode } from "react";
-import { Pressable, View } from "react-native";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Dimensions, Keyboard, Platform, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, fonts, useScale } from "../theme";
 import { Paper } from "./Paper";
 import { Avatar, T } from "./ui";
+
+/**
+ * Pads its bottom by exactly how much the on-screen keyboard overlaps it, so
+ * inputs and their send buttons pinned at the bottom stay above the keyboard.
+ * Measures itself in window coordinates, so tab bars, top bars, and safe-area
+ * padding around it are accounted for (KeyboardAvoidingView measures relative
+ * to its parent and under-pads inside Screen).
+ */
+export function KeyboardAvoider({ children }: { children: ReactNode }) {
+  const ref = useRef<View>(null);
+  const [pad, setPad] = useState(0);
+
+  useEffect(() => {
+    const ios = Platform.OS === "ios";
+    const show = Keyboard.addListener(ios ? "keyboardWillShow" : "keyboardDidShow", (e) => {
+      const keyboardTop = e.endCoordinates.screenY || Dimensions.get("window").height - e.endCoordinates.height;
+      ref.current?.measureInWindow((_x, y, _w, h) => setPad(Math.max(0, y + h - keyboardTop)));
+    });
+    const hide = Keyboard.addListener(ios ? "keyboardWillHide" : "keyboardDidHide", () => setPad(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
+  return (
+    <View ref={ref} style={{ flex: 1 }}>
+      <View style={{ flex: 1, marginBottom: pad }}>{children}</View>
+    </View>
+  );
+}
 
 export type Tab = "notif" | "dms" | "wishes" | "community";
 
