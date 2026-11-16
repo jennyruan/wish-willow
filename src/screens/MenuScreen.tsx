@@ -1,10 +1,10 @@
-import { useConvex, useQuery } from "convex/react";
+import { useConvex, useMutation, useQuery } from "convex/react";
 import { useState, type ReactNode } from "react";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { TopBar, type Tab } from "../components/Chrome";
-import { Chip, Chips, Question, StatusLabel, T, VoiceField } from "../components/ui";
+import { Chip, Chips, CtaButton, Question, StatusLabel, T, VoiceField } from "../components/ui";
 import type { Me } from "../identity";
 import { timeAgo } from "../media";
 import { colors, fonts, useScale } from "../theme";
@@ -43,7 +43,12 @@ export function MenuScreen({
         <View style={{ marginTop: 6 * s }}>
           {tab === "wishes" && <WishList ownerId={me._id} onOpen={onOpenWish} />}
           {tab === "dms" && <Inbox me={me} onOpen={onOpenDm} />}
-          {tab === "notif" && <Empty text="No notifications yet." />}
+          {tab === "notif" && (
+            <>
+              <DailyNudge userId={me._id} />
+              <Notifications userId={me._id} onOpen={onOpenWish} />
+            </>
+          )}
         </View>
         <Pressable
           onPress={onLogOut}
@@ -75,6 +80,100 @@ function WishList({ ownerId, onOpen }: { ownerId: Id<"users">; onOpen: (wishId: 
       <StatusLabel realized={w.realized} />
     </Row>
   ));
+}
+
+const NOTIF_ICON = { comment: "💬", fund: "💸", rsvp: "🎟️", reward: "🎁", match: "💞" } as const;
+
+function Notifications({ userId, onOpen }: { userId: Id<"users">; onOpen: (wishId: Id<"wishes">) => void }) {
+  const { s } = useScale();
+  const items = useQuery(api.notifications.listMine, { userId });
+  if (items === undefined) return <ActivityIndicator color={colors.red} style={{ marginTop: 24 * s }} />;
+  if (items.length === 0) return <Empty text="No notifications yet." />;
+  return items.map((n) => {
+    const wishId = n.wishId;
+    return (
+      <Row key={n._id} icon={NOTIF_ICON[n.kind]} onPress={wishId ? () => onOpen(wishId) : undefined}>
+        <T style={{ flex: 1, fontSize: 13 * s, lineHeight: 13 * s * 1.35, color: colors.note }}>{n.text}</T>
+        <T style={{ fontFamily: fonts.sansBold, fontSize: 10 * s, color: colors.faint }}>{timeAgo(n.createdAt)}</T>
+      </Row>
+    );
+  });
+}
+
+/**
+ * Opt in to Willow's daily check-in over text (Keiki: the free shared iMessage
+ * number or Telegram), bound to the user's own iMessage number or Telegram ID.
+ */
+function DailyNudge({ userId }: { userId: Id<"users"> }) {
+  const { s } = useScale();
+  const nudge = useQuery(api.nudge.status, { userId });
+  const join = useQuery(api.nudge.joinInfo, {});
+  const setDailyNudge = useMutation(api.nudge.setDailyNudge);
+  const [editing, setEditing] = useState(false);
+  const [channel, setChannel] = useState<"imessage" | "telegram">("imessage");
+  const [address, setAddress] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const turnOn = async () => {
+    setError(null);
+    try {
+      await setDailyNudge({ userId, enabled: true, channel, address });
+      setEditing(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message.replace(/^.*Uncaught Error: /, "").split("\n")[0] : "Couldn't turn it on.");
+    }
+  };
+
+  const shownChannel = nudge?.enabled ? nudge.channel : channel;
+  const where = nudge?.recipient?.replace(/^tg:/, "Telegram ");
+  const hint =
+    shownChannel === "telegram"
+      ? join?.telegramBot && `Message @${join.telegramBot} on Telegram once so Willow can text you back.`
+      : join?.imessageNumber && join.joinCode && `Text ${join.joinCode} to ${join.imessageNumber} once so Willow can text you back.`;
+
+  return (
+    <View>
+      <Row
+        icon="💬"
+        onPress={nudge === undefined ? undefined : nudge.enabled ? () => setDailyNudge({ userId, enabled: false }) : () => setEditing(!editing)}
+      >
+        <View style={{ flex: 1 }}>
+          <Question size={14}>Daily nudge over text</Question>
+          <T style={{ fontSize: 11.5 * s, color: colors.muted, marginTop: 2 * s }}>
+            {nudge?.enabled && where ? `Willow texts your daily wish check-in to ${where}.` : "Willow texts your daily wish check-in."}
+          </T>
+        </View>
+        <T style={{ fontFamily: fonts.sansBold, fontSize: 11 * s, color: nudge?.enabled ? colors.red : colors.faint }}>
+          {nudge === undefined ? "…" : nudge.enabled ? "ON" : "OFF"}
+        </T>
+      </Row>
+      {!nudge?.enabled && editing && (
+        <View style={{ marginBottom: 10 * s }}>
+          <Chips>
+            <Chip label="iMessage" on={channel === "imessage"} onPress={() => setChannel("imessage")} />
+            <Chip label="Telegram" on={channel === "telegram"} onPress={() => setChannel("telegram")} />
+          </Chips>
+          <VoiceField
+            value={address}
+            onChangeText={setAddress}
+            placeholder={channel === "imessage" ? "Your iMessage number, e.g. +14155550123" : "Your numeric Telegram user ID"}
+            keyboardType={channel === "imessage" ? "phone-pad" : "number-pad"}
+            autoCapitalize="none"
+            onSubmit={turnOn}
+          />
+          {hint && <T style={{ fontSize: 11.5 * s, color: colors.muted, marginTop: 6 * s }}>{hint}</T>}
+          {error && <T style={{ fontSize: 11.5 * s, color: colors.redDeep, marginTop: 6 * s }}>{error}</T>}
+          <CtaButton label="Turn on daily nudge" disabled={!address.trim()} onPress={turnOn} />
+        </View>
+      )}
+      {nudge?.enabled && nudge.delivery !== "delivered" && nudge.delivery !== "queued" && (
+        <T style={{ fontSize: 11.5 * s, color: nudge.delivery === "unreachable" ? colors.redDeep : colors.muted, marginBottom: 10 * s }}>
+          {nudge.delivery === "unreachable" ? "Willow couldn't reach you yet. " : ""}
+          {hint || "Text Willow once first so it can reach you."}
+        </T>
+      )}
+    </View>
+  );
 }
 
 function Inbox({ me, onOpen }: { me: Me; onOpen: (userId: Id<"users">) => void }) {

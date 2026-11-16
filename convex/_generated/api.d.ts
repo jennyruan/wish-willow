@@ -10,12 +10,17 @@
 
 import type * as ai from "../ai.js";
 import type * as comments from "../comments.js";
+import type * as crons from "../crons.js";
 import type * as dms from "../dms.js";
 import type * as files from "../files.js";
 import type * as geo from "../geo.js";
+import type * as http from "../http.js";
+import type * as notifications from "../notifications.js";
+import type * as nudge from "../nudge.js";
 import type * as seed from "../seed.js";
 import type * as users from "../users.js";
 import type * as voice from "../voice.js";
+import type * as whop from "../whop.js";
 import type * as wishes from "../wishes.js";
 
 import type {
@@ -27,12 +32,17 @@ import type {
 declare const fullApi: ApiFromModules<{
   ai: typeof ai;
   comments: typeof comments;
+  crons: typeof crons;
   dms: typeof dms;
   files: typeof files;
   geo: typeof geo;
+  http: typeof http;
+  notifications: typeof notifications;
+  nudge: typeof nudge;
   seed: typeof seed;
   users: typeof users;
   voice: typeof voice;
+  whop: typeof whop;
   wishes: typeof wishes;
 }>;
 
