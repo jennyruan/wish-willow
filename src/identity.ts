@@ -7,6 +7,7 @@ import type { Id } from "../convex/_generated/dataModel";
 
 const TOKEN_KEY = "ww.deviceToken";
 const HANDLE_KEY = "ww.handle";
+const USER_KEY = "ww.user";
 
 export type Me = { _id: Id<"users">; handle: string };
 
@@ -30,32 +31,39 @@ function joinError(e: unknown) {
 }
 
 /**
- * Join-by-handle identity: the device keeps a random token and the handle it
- * joined with; on launch it re-joins with both, and prompts once for a handle.
+ * Join-by-handle identity: the device keeps a random token and the user it
+ * joined as. On launch a cached user is shown at once and re-joined in the
+ * background; without one, it re-joins with the stored handle or prompts once.
  */
 export function useIdentity() {
   const joinByHandle = useMutation(api.users.joinByHandle);
   const [identity, setIdentity] = useState<Identity>({ status: "loading" });
 
-  const join = useCallback(
+  const signIn = useCallback(
     async (handle: string) => {
-      try {
-        const user = await joinByHandle({ handle, deviceToken: await deviceToken() });
-        await AsyncStorage.setItem(HANDLE_KEY, user.handle);
-        setIdentity({ status: "ready", user: { _id: user._id, handle: user.handle } });
-      } catch (e) {
-        setIdentity({ status: "needsHandle", handle, error: joinError(e) });
-      }
+      const user = await joinByHandle({ handle, deviceToken: await deviceToken() });
+      const me = { _id: user._id, handle: user.handle };
+      await AsyncStorage.multiSet([[HANDLE_KEY, me.handle], [USER_KEY, JSON.stringify(me)]]);
+      setIdentity({ status: "ready", user: me });
     },
     [joinByHandle],
   );
 
+  const join = useCallback(
+    (handle: string) => signIn(handle).catch((e) => setIdentity({ status: "needsHandle", handle, error: joinError(e) })),
+    [signIn],
+  );
+
   useEffect(() => {
-    AsyncStorage.getItem(HANDLE_KEY).then((handle) => {
-      if (handle) join(handle);
+    AsyncStorage.multiGet([USER_KEY, HANDLE_KEY]).then(([[, cached], [, handle]]) => {
+      if (cached) {
+        const me = JSON.parse(cached) as Me;
+        setIdentity({ status: "ready", user: me });
+        signIn(me.handle).catch(() => {});
+      } else if (handle) join(handle);
       else setIdentity({ status: "needsHandle", handle: "" });
     });
-  }, [join]);
+  }, [join, signIn]);
 
   return { identity, join };
 }

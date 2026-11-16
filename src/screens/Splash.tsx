@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { Animated, Easing, Platform, Pressable } from "react-native";
+import { ActivityIndicator, Animated, Easing, Platform, Pressable } from "react-native";
 import { LogoMark, Wordmark } from "../components/Logo";
 import { Paper } from "../components/Paper";
-import { useScale } from "../theme";
+import { colors, useScale } from "../theme";
 
 const native = Platform.OS !== "web";
 
-/** 2s logo welcome; fades out once the timer is up (or it's tapped) and identity is resolved. */
+/** Short logo welcome with a spinner; fades out once the timer is up (or it's tapped) and identity is resolved. */
 export function Splash({ ready, onDone }: { ready: boolean; onDone: () => void }) {
   const { s } = useScale();
   const opacity = useRef(new Animated.Value(0)).current;
@@ -18,7 +18,7 @@ export function Splash({ ready, onDone }: { ready: boolean; onDone: () => void }
       Animated.timing(opacity, { toValue: 1, duration: 800, easing: Easing.out(Easing.ease), useNativeDriver: native }),
       Animated.timing(scale, { toValue: 1, duration: 800, easing: Easing.out(Easing.ease), useNativeDriver: native }),
     ]).start();
-    const timer = setTimeout(() => setElapsed(true), 2000);
+    const timer = setTimeout(() => setElapsed(true), 900);
     return () => clearTimeout(timer);
   }, [opacity, scale]);
 
@@ -35,6 +35,7 @@ export function Splash({ ready, onDone }: { ready: boolean; onDone: () => void }
           <Animated.View style={{ marginTop: 18 * s, alignSelf: "stretch", paddingHorizontal: 24 * s }}>
             <Wordmark size={30 * s} align="center" />
           </Animated.View>
+          <ActivityIndicator color={colors.red} style={{ marginTop: 28 * s }} accessibilityLabel="Loading" />
         </Animated.View>
       </Pressable>
     </Paper>
