@@ -1,9 +1,9 @@
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, View } from "react-native";
+import { ActivityIndicator, FlatList, View } from "react-native";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { Composer } from "../components/Composer";
-import { TopBar } from "../components/Chrome";
+import { KeyboardAvoider, TopBar } from "../components/Chrome";
 import { MediaView } from "../components/Media";
 import { T } from "../components/ui";
 import type { Me } from "../identity";
@@ -19,7 +19,7 @@ export function DmScreen({ me, conversationId, otherId, onBack }: { me: Me; conv
   const sendMessage = useMutation(api.dms.sendMessage);
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoider>
       <TopBar title={`@${otherHandle}`} onBack={onBack} />
       <FlatList
         inverted
@@ -64,6 +64,6 @@ export function DmScreen({ me, conversationId, otherId, onBack }: { me: Me; conv
         }}
       />
       <Composer placeholder={`message @${otherHandle}…`} onSend={({ body, mediaId }) => sendMessage({ conversationId, authorId: me._id, body, mediaId })} />
-    </KeyboardAvoidingView>
+    </KeyboardAvoider>
   );
 }

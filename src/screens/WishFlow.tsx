@@ -2,10 +2,10 @@ import { useAction, useMutation } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ActivityIndicator, Animated, BackHandler, Easing, Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
+import { ActivityIndicator, Animated, BackHandler, Easing, Image, Linking, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import { TopBar } from "../components/Chrome";
+import { KeyboardAvoider, TopBar } from "../components/Chrome";
 import { Twig } from "../components/Logo";
 import { Chip, Chips, CtaButton, GroupLabel, Kicker, Question, Select, Sub, T, VoiceField } from "../components/ui";
 import { colors, fonts, useScale } from "../theme";
@@ -179,7 +179,7 @@ export function WishFlow({
   const isPhone = kind === "iphone";
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoider>
       <TopBar onBack={back} handle={me.handle} onAvatar={onAvatar} />
       <View style={{ flexDirection: "row", gap: 6 * s, justifyContent: "center", paddingTop: 12 * s, paddingBottom: 2 * s }}>
         {questionSteps.map((x) => (
@@ -341,7 +341,7 @@ export function WishFlow({
           </>
         )}
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAvoider>
   );
 }
 
