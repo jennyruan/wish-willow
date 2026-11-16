@@ -60,6 +60,22 @@ function errorMessage(err: unknown) {
 const nullable = (type: string) => ({ type: [type, "null"] });
 
 /**
+ * Topics the app's own wizard steps already ask about for each wish kind, so
+ * Willow's AI questions must not ask them again. Mirrors STEPS in
+ * src/screens/WishFlow.tsx; every kind but hackathon has the budget-and-timing
+ * step.
+ */
+const ASKED_BY_WIZARD: Record<string, string[]> = {
+  girlfriend: ["local vs. remote", "photos of their type", "budget", "timeframe or deadline", "anything else to add"],
+  boyfriend: ["local vs. remote", "photos of their type", "budget", "timeframe or deadline", "anything else to add"],
+  iphone: ["model, color, and storage configuration", "where they are located", "budget", "timeframe or deadline", "anything else to add"],
+  hackathon: ["which hackathon tracks to follow", "anything else to add"],
+  other: ["budget", "timeframe or deadline", "anything else to add"],
+};
+
+const WIZARD_TOPIC = /budget|spend|afford|price range|time ?frame|timeline|deadline|by when|how soon|how quickly|what date/i;
+
+/**
  * Turn a spoken or typed wish into structured intake plus the next 1-3
  * clarifying questions. Returns status "not_configured" when OPENAI_API_KEY is
  * absent so the app keeps working before the key is set.
@@ -82,6 +98,8 @@ export const clarifyWish = action({
           "Extract structured intake from ONLY what the user said. Never invent facts: use null for budget, timeline, or location the user did not state.",
           "budget is a number in US dollars. details lists concrete preferences or constraints the user stated.",
           "Then write the 1 to 3 most useful clarifying questions that would let you research real, actionable options. Ask about what is missing, not what was already said. Keep each question short and warm.",
+          "The app asks the user about these topics on its own screens, so never ask about any of them, even reworded: " + (ASKED_BY_WIZARD[args.kind] ?? ASKED_BY_WIZARD.other).join("; ") + ".",
+          "Each question must cover a different topic from every other question.",
         ].join("\n"),
         input: `Wish category: ${args.kind}\nWish: ${wishText}`,
         text: {
@@ -115,7 +133,7 @@ export const clarifyWish = action({
         details: string[];
         questions: string[];
       };
-      return { status: "ok" as const, intake, questions: questions.slice(0, 3) };
+      return { status: "ok" as const, intake, questions: questions.filter((q) => args.kind === "hackathon" || !WIZARD_TOPIC.test(q)).slice(0, 3) };
     } catch (err) {
       return { status: "error" as const, message: errorMessage(err) };
     }
