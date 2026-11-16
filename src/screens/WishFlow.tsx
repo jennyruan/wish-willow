@@ -303,6 +303,13 @@ export function WishFlow({
                 {clarify.questions.map((question, n) => (
                   <View key={question}>
                     <Question size={19} style={{ marginTop: 18 * s }}>{question}</Question>
+                    {clarify.options?.[n]?.length ? (
+                      <Chips style={{ marginTop: 10 * s, marginBottom: 10 * s }}>
+                        {clarify.options[n].map((option) => (
+                          <Chip key={option} label={option} on={a.aiAnswers[n] === option} onPress={() => set({ aiAnswers: Object.assign([...a.aiAnswers], { [n]: option }) })} />
+                        ))}
+                      </Chips>
+                    ) : null}
                     <VoiceField
                       value={a.aiAnswers[n] ?? ""}
                       onChangeText={(t) => set({ aiAnswers: Object.assign([...a.aiAnswers], { [n]: t }) })}
