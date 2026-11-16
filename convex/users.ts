@@ -14,13 +14,14 @@ const userDoc = v.object({
 /**
  * Lightweight "join by handle" identity for the hackathon.
  *
- * Upserts a user keyed by deviceToken: if this device already has a user, its
- * handle is updated to the supplied one; otherwise a new user is created.
- * Returns the resulting user document.
+ * Handle-only sign-in: if the handle already belongs to a user, this device
+ * signs in as that user. Otherwise this device's existing user is renamed to
+ * the handle, or a new user is created for this device. Returns the resulting
+ * user document.
  *
- * NOTE: There is no password / server-derived identity here. In production this
- * becomes real auth and the device would not be trusted to pick an arbitrary
- * handle. See README.
+ * NOTE: There is no password / server-derived identity here, so anyone who
+ * types a handle signs in as it. In production this becomes real auth. See
+ * README.
  */
 export const joinByHandle = mutation({
   args: {
@@ -37,6 +38,12 @@ export const joinByHandle = mutation({
       throw new Error("handle must be 40 characters or fewer");
     }
 
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_handle", (q) => q.eq("handle", handle))
+      .first();
+    if (owner) return owner;
+
     const existing = await ctx.db
       .query("users")
       .withIndex("by_deviceToken", (q) =>
@@ -45,27 +52,11 @@ export const joinByHandle = mutation({
       .unique();
 
     if (existing) {
-      if (existing.handle !== handle) {
-        const taken = await ctx.db
-          .query("users")
-          .withIndex("by_handle", (q) => q.eq("handle", handle))
-          .first();
-        if (taken && taken._id !== existing._id) {
-          throw new Error("handle already taken — pick another");
-        }
-        await ctx.db.patch(existing._id, { handle });
-      }
+      await ctx.db.patch(existing._id, { handle });
       const refreshed = await ctx.db.get(existing._id);
       if (!refreshed) throw new Error("user vanished after patch");
       return refreshed;
     }
-
-    // Enforce unique handles so a handle is a valid DM address.
-    const taken = await ctx.db
-      .query("users")
-      .withIndex("by_handle", (q) => q.eq("handle", handle))
-      .first();
-    if (taken) throw new Error("handle already taken — pick another");
 
     const now = Date.now();
     const id = await ctx.db.insert("users", {
