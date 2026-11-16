@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { Dimensions, Keyboard, Platform, Pressable, View, type KeyboardEvent } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, fonts, useScale } from "../theme";
@@ -49,21 +49,27 @@ export function KeyboardAvoider({ children }: { children: ReactNode }) {
 
 export type Tab = "notif" | "dms" | "wishes" | "community";
 
-/** Paper page inside the safe area, content capped to a phone-width column on tablets. */
-export function Screen({ children, tabBar }: { children: ReactNode; tabBar?: ReactNode }) {
+/** Paper page inside the safe area, content capped to a phone-width column on tablets; onHome backs the header mark's home tap. */
+export function Screen({ children, tabBar, onHome }: { children: ReactNode; tabBar?: ReactNode; onHome?: () => void }) {
   const insets = useSafeAreaInsets();
   const { maxWidth } = useScale();
   return (
-    <Paper style={{ paddingTop: insets.top, paddingBottom: tabBar ? 0 : insets.bottom }}>
-      <View style={{ flex: 1, width: "100%", maxWidth, alignSelf: "center" }}>{children}</View>
-      {tabBar}
-    </Paper>
+    <GoHome.Provider value={onHome ?? null}>
+      <Paper style={{ paddingTop: insets.top, paddingBottom: tabBar ? 0 : insets.bottom }}>
+        <View style={{ flex: 1, width: "100%", maxWidth, alignSelf: "center" }}>{children}</View>
+        {tabBar}
+      </Paper>
+    </GoHome.Provider>
   );
 }
 
-/** Back chevron, a centred Anton mark (WISH·WILLOW by default), optional avatar. */
+/** Returns to the "I Wish" home from anywhere; Screen provides it from its onHome. */
+export const GoHome = createContext<(() => void) | null>(null);
+
+/** Back chevron, a centred Anton mark (WISH·WILLOW by default) that goes home when tapped, optional avatar. */
 export function TopBar({ title, onBack, handle, onAvatar }: { title?: string; onBack?: () => void; handle?: string; onAvatar?: () => void }) {
   const { s } = useScale();
+  const goHome = useContext(GoHome);
   const markStyle = { fontFamily: fonts.anton, fontSize: 11 * s, letterSpacing: 11 * s * 0.22, color: colors.redDeep, opacity: 0.75 };
   return (
     <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 8 * s, paddingHorizontal: 14 * s, minHeight: 38 * s }}>
@@ -74,7 +80,7 @@ export function TopBar({ title, onBack, handle, onAvatar }: { title?: string; on
           </Pressable>
         )}
       </View>
-      <View style={{ flex: 1, alignItems: "center" }}>
+      <Pressable onPress={goHome ?? undefined} disabled={!goHome} accessibilityRole="button" accessibilityLabel="Home" hitSlop={8} style={{ flex: 1, alignItems: "center" }}>
         {title ? (
           <T numberOfLines={1} style={markStyle}>{title}</T>
         ) : (
@@ -82,7 +88,7 @@ export function TopBar({ title, onBack, handle, onAvatar }: { title?: string; on
             WISH<T style={{ color: colors.ink }}>·</T>WILLOW
           </T>
         )}
-      </View>
+      </Pressable>
       <View style={{ width: 44 * s, alignItems: "flex-end" }}>
         {handle && <Avatar handle={handle} size={30 * s} onPress={onAvatar} />}
       </View>
