@@ -10,6 +10,7 @@ import { Twig } from "../components/Logo";
 import { Chip, Chips, CtaButton, GroupLabel, Kicker, Question, Select, Sub, T, VoiceField } from "../components/ui";
 import { colors, fonts, useScale } from "../theme";
 import { uploadToConvex } from "../upload";
+import { voiceSupported } from "../voice";
 import { EXAMPLE_WISHES, type WishKind } from "../wishKinds";
 
 type StepId = "locality" | "location" | "config" | "track" | "photos" | "budget" | "ask" | "extra" | "privacy" | "blow";
@@ -326,7 +327,7 @@ export function WishFlow({
           <>
             <Kicker>One more thing</Kicker>
             <Question>Anything else I should know?</Question>
-            <VoiceField multiline value={a.extra} onChangeText={(extra) => set({ extra })} placeholder="speak freely — the more I know you, the better I help…" style={{ marginTop: 20 * s }} />
+            <VoiceField multiline value={a.extra} onChangeText={(extra) => set({ extra })} placeholder={`${voiceSupported ? "speak" : "write"} freely — the more I know you, the better I help…`} style={{ marginTop: 20 * s }} />
           </>
         )}
 
