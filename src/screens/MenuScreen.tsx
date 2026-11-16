@@ -12,7 +12,7 @@ import { WISH_EMOJI } from "../wishKinds";
 
 export type MenuTab = Exclude<Tab, "community">;
 
-/** The @handle menu: Notifications · Wishes · DMs. Wishes is the live wish list, DMs the live inbox. */
+/** The @handle menu: Notifications · Wishes · DMs, and Log out. Wishes is the live wish list, DMs the live inbox. */
 export function MenuScreen({
   me,
   tab,
@@ -20,6 +20,7 @@ export function MenuScreen({
   onBack,
   onOpenWish,
   onOpenDm,
+  onLogOut,
 }: {
   me: Me;
   tab: MenuTab;
@@ -27,6 +28,7 @@ export function MenuScreen({
   onBack: () => void;
   onOpenWish: (wishId: Id<"wishes">) => void;
   onOpenDm: (userId: Id<"users">) => void;
+  onLogOut: () => void;
 }) {
   const { s } = useScale();
   return (
@@ -43,6 +45,15 @@ export function MenuScreen({
           {tab === "dms" && <Inbox me={me} onOpen={onOpenDm} />}
           {tab === "notif" && <Empty text="No notifications yet." />}
         </View>
+        <Pressable
+          onPress={onLogOut}
+          accessibilityRole="button"
+          accessibilityLabel={`Log out of @${me.handle}`}
+          style={({ pressed }) => ({ alignSelf: "center", marginTop: 28 * s, borderWidth: 1.5, borderColor: pressed ? colors.redDeep : colors.red, borderRadius: 10 * s, paddingVertical: 9 * s, paddingHorizontal: 18 * s })}
+        >
+          <T style={{ fontFamily: fonts.sansBold, fontSize: 13 * s, color: colors.red }}>Log out</T>
+        </Pressable>
+        <T style={{ fontSize: 11 * s, color: colors.faint, marginTop: 6 * s, textAlign: "center" }}>Rejoin with @{me.handle} any time to pick up where you left off.</T>
       </ScrollView>
     </>
   );

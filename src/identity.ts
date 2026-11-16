@@ -34,6 +34,8 @@ function joinError(e: unknown) {
  * Join-by-handle identity: the device keeps a random token and the user it
  * joined as. On launch a cached user is shown at once and re-joined in the
  * background; without one, it re-joins with the stored handle or prompts once.
+ * Signing out drops the device token too, so the next new handle becomes a new
+ * user instead of renaming the old one.
  */
 export function useIdentity() {
   const joinByHandle = useMutation(api.users.joinByHandle);
@@ -54,6 +56,11 @@ export function useIdentity() {
     [signIn],
   );
 
+  const signOut = useCallback(async () => {
+    await AsyncStorage.multiRemove([USER_KEY, HANDLE_KEY, TOKEN_KEY]);
+    setIdentity({ status: "needsHandle", handle: "" });
+  }, []);
+
   useEffect(() => {
     AsyncStorage.multiGet([USER_KEY, HANDLE_KEY]).then(([[, cached], [, handle]]) => {
       if (cached) {
@@ -65,5 +72,5 @@ export function useIdentity() {
     });
   }, [join, signIn]);
 
-  return { identity, join };
+  return { identity, join, signOut };
 }
