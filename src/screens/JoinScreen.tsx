@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, TextInput, View } from "react-native";
-import { Screen } from "../components/Chrome";
+import { TextInput, View } from "react-native";
+import { KeyboardAvoider, Screen } from "../components/Chrome";
 import { LogoMark, Wordmark } from "../components/Logo";
 import { CtaButton, Question, Sub, T } from "../components/ui";
 import { colors, fonts, useScale } from "../theme";
@@ -23,7 +23,7 @@ export function JoinScreen({ initialHandle, error, onJoin }: { initialHandle: st
 
   return (
     <Screen>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoider>
         <View style={{ flex: 1, paddingHorizontal: 22 * s, paddingBottom: 14 * s, justifyContent: "center" }}>
           <View style={{ alignItems: "center", marginBottom: 28 * s }}>
             <LogoMark size={72 * s} detailed />
@@ -54,7 +54,7 @@ export function JoinScreen({ initialHandle, error, onJoin }: { initialHandle: st
           </T>
           <CtaButton label={busy ? "Joining…" : "Join the grove"} onPress={submit} disabled={!valid || busy} />
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardAvoider>
     </Screen>
   );
 }

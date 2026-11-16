@@ -6,7 +6,7 @@ import { YesevaOne_400Regular } from "@expo-google-fonts/yeseva-one/400Regular";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { useFonts } from "expo-font";
 import { StatusBar } from "expo-status-bar";
-import { View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Root } from "./src/Root";
 import { colors } from "./src/theme";
@@ -28,7 +28,7 @@ export default function App() {
     <ConvexProvider client={convex}>
       <SafeAreaProvider>
         <StatusBar style="dark" />
-        {fontsLoaded ? <Root /> : <View style={{ flex: 1, backgroundColor: colors.paper }} />}
+        {fontsLoaded ? <Root /> : <View style={{ flex: 1, backgroundColor: colors.paper, alignItems: "center", justifyContent: "center" }}><ActivityIndicator color={colors.red} /></View>}
       </SafeAreaProvider>
     </ConvexProvider>
   );

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
+import { KeyboardAvoider } from "../components/Chrome";
 import { LogoMark, Wordmark } from "../components/Logo";
 import { Avatar, Question, T, VoiceField } from "../components/ui";
 import { colors, fonts, useScale } from "../theme";
@@ -26,7 +27,7 @@ export function HomeScreen({
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoider>
       <View style={{ flex: 1, paddingHorizontal: 22 * s, paddingTop: 12 * s, paddingBottom: 14 * s }}>
         <View style={{ marginTop: 6 * s, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 * s }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 * s, flex: 1 }}>
@@ -78,6 +79,6 @@ export function HomeScreen({
         </T>
         <VoiceField value={wish} onChangeText={setWish} onSubmit={submit} placeholder="I wish…" returnKeyType="go" style={{ marginTop: 0 }} />
       </View>
-    </KeyboardAvoidingView>
+    </KeyboardAvoider>
   );
 }
