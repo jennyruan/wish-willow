@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useMutation } from "convex/react";
 import { randomUUID } from "expo-crypto";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 
@@ -40,10 +40,13 @@ function joinError(e: unknown) {
 export function useIdentity() {
   const joinByHandle = useMutation(api.users.joinByHandle);
   const [identity, setIdentity] = useState<Identity>({ status: "loading" });
+  const session = useRef(0);
 
   const signIn = useCallback(
     async (handle: string) => {
+      const started = session.current;
       const user = await joinByHandle({ handle, deviceToken: await deviceToken() });
+      if (session.current !== started) return;
       const me = { _id: user._id, handle: user.handle };
       await AsyncStorage.multiSet([[HANDLE_KEY, me.handle], [USER_KEY, JSON.stringify(me)]]);
       setIdentity({ status: "ready", user: me });
@@ -52,11 +55,17 @@ export function useIdentity() {
   );
 
   const join = useCallback(
-    (handle: string) => signIn(handle).catch((e) => setIdentity({ status: "needsHandle", handle, error: joinError(e) })),
+    (handle: string) => {
+      const started = session.current;
+      return signIn(handle).catch((e) => {
+        if (session.current === started) setIdentity({ status: "needsHandle", handle, error: joinError(e) });
+      });
+    },
     [signIn],
   );
 
   const signOut = useCallback(async () => {
+    session.current += 1;
     await AsyncStorage.multiRemove([USER_KEY, HANDLE_KEY, TOKEN_KEY]);
     setIdentity({ status: "needsHandle", handle: "" });
   }, []);

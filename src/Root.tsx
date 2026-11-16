@@ -57,7 +57,7 @@ export function Root() {
 
   if (route.name === "dm") {
     return (
-      <Screen>
+      <Screen onHome={home}>
         <DmScreen key={route.conversationId} me={me} conversationId={route.conversationId} otherId={route.otherId} onBack={() => setRoute(route.from)} />
       </Screen>
     );
@@ -65,7 +65,7 @@ export function Root() {
 
   if (route.name === "flow") {
     return (
-      <Screen>
+      <Screen onHome={home}>
         <WishFlow
           key={route.key}
           me={me}
@@ -82,7 +82,7 @@ export function Root() {
   const tabRoute = route.name === "wish" ? route.from : route;
   const activeTab = tabRoute.name === "menu" ? tabRoute.tab : tabRoute.name === "community" ? "community" : null;
   return (
-    <Screen tabBar={<TabBar active={activeTab} onSelect={openTab} />}>
+    <Screen onHome={home} tabBar={<TabBar active={activeTab} onSelect={openTab} />}>
       {route.name === "home" && (
         <HomeScreen
           handle={me.handle}
