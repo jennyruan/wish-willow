@@ -73,7 +73,7 @@ const ASKED_BY_WIZARD: Record<string, string[]> = {
   other: ["budget", "timeframe or deadline", "anything else to add"],
 };
 
-const WIZARD_TOPIC = /budget|spend|afford|price|cost|how much|\$|time ?frame|timeline|deadline|by when|how soon|how long|how quickly|what date|when (do|would|are) you/i;
+const WIZARD_TOPIC = /budget|spend|afford|price range|time ?frame|timeline|deadline|by when|how soon|how quickly|what date/i;
 
 /**
  * Turn a spoken or typed wish into structured intake plus the next 1-3
